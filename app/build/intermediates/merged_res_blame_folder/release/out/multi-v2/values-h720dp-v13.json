@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.aarchangel.chatapp-mergeReleaseResources-51:/values-h720dp-v13/values-h720dp-v13.xml",
+            "map": [
+                {
+                    "source": "/home/ark/.gradle/caches/8.14.1/transforms/8bacf8c0e344e3475aa80b417b3032dd/transformed/appcompat-1.6.1/res/values-h720dp-v13/values-h720dp-v13.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "66",
+                        "endOffsets": "117"
+                    }
+                }
+            ]
+        }
+    ]
+}

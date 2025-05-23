@@ -1,0 +1,18 @@
+[
+    {
+        "merged": "com.aarchangel.chatapp-merged_res-57:/drawable_ic_launcher.xml.flat",
+        "source": "com.aarchangel.chatapp-main-59:/drawable/ic_launcher.xml"
+    },
+    {
+        "merged": "com.aarchangel.chatapp-merged_res-57:/drawable_ic_launcher_round.xml.flat",
+        "source": "com.aarchangel.chatapp-main-59:/drawable/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.aarchangel.chatapp-merged_res-57:/xml_backup_rules.xml.flat",
+        "source": "com.aarchangel.chatapp-main-59:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.aarchangel.chatapp-merged_res-57:/xml_data_extraction_rules.xml.flat",
+        "source": "com.aarchangel.chatapp-main-59:/xml/data_extraction_rules.xml"
+    }
+]
