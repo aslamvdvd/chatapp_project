@@ -8,6 +8,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+/**
+ * Defines the set of Material Design typography styles to be used in the ChatApp.
+ * This includes styles for body text, titles, labels, etc.
+ * // ChatApp by aarchangel
+ */
 val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,

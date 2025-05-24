@@ -9,22 +9,22 @@
 9        android:targetSdkVersion="34" />
 10
 11    <permission
-11-->[androidx.core:core:1.9.0] /home/ark/.gradle/caches/8.14.1/transforms/3b90a9d60c7f622d50c4f7ab1a0912f3/transformed/core-1.9.0/AndroidManifest.xml:22:5-24:47
+11-->[androidx.core:core:1.10.0] /home/ark/.gradle/caches/8.14.1/transforms/1776be6f8b7f0958a49c310b208974b7/transformed/core-1.10.0/AndroidManifest.xml:22:5-24:47
 12        android:name="com.aarchangel.chatapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-12-->[androidx.core:core:1.9.0] /home/ark/.gradle/caches/8.14.1/transforms/3b90a9d60c7f622d50c4f7ab1a0912f3/transformed/core-1.9.0/AndroidManifest.xml:23:9-81
+12-->[androidx.core:core:1.10.0] /home/ark/.gradle/caches/8.14.1/transforms/1776be6f8b7f0958a49c310b208974b7/transformed/core-1.10.0/AndroidManifest.xml:23:9-81
 13        android:protectionLevel="signature" />
-13-->[androidx.core:core:1.9.0] /home/ark/.gradle/caches/8.14.1/transforms/3b90a9d60c7f622d50c4f7ab1a0912f3/transformed/core-1.9.0/AndroidManifest.xml:24:9-44
+13-->[androidx.core:core:1.10.0] /home/ark/.gradle/caches/8.14.1/transforms/1776be6f8b7f0958a49c310b208974b7/transformed/core-1.10.0/AndroidManifest.xml:24:9-44
 14
 15    <uses-permission android:name="com.aarchangel.chatapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-15-->[androidx.core:core:1.9.0] /home/ark/.gradle/caches/8.14.1/transforms/3b90a9d60c7f622d50c4f7ab1a0912f3/transformed/core-1.9.0/AndroidManifest.xml:26:5-97
-15-->[androidx.core:core:1.9.0] /home/ark/.gradle/caches/8.14.1/transforms/3b90a9d60c7f622d50c4f7ab1a0912f3/transformed/core-1.9.0/AndroidManifest.xml:26:22-94
+15-->[androidx.core:core:1.10.0] /home/ark/.gradle/caches/8.14.1/transforms/1776be6f8b7f0958a49c310b208974b7/transformed/core-1.10.0/AndroidManifest.xml:26:5-97
+15-->[androidx.core:core:1.10.0] /home/ark/.gradle/caches/8.14.1/transforms/1776be6f8b7f0958a49c310b208974b7/transformed/core-1.10.0/AndroidManifest.xml:26:22-94
 16
 17    <application
 17-->/home/ark/Desktop/chatapp_project/app/src/main/AndroidManifest.xml:4:5-24:19
 18        android:allowBackup="true"
 18-->/home/ark/Desktop/chatapp_project/app/src/main/AndroidManifest.xml:5:9-35
 19        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-19-->[androidx.core:core:1.9.0] /home/ark/.gradle/caches/8.14.1/transforms/3b90a9d60c7f622d50c4f7ab1a0912f3/transformed/core-1.9.0/AndroidManifest.xml:28:18-86
+19-->[androidx.core:core:1.10.0] /home/ark/.gradle/caches/8.14.1/transforms/1776be6f8b7f0958a49c310b208974b7/transformed/core-1.10.0/AndroidManifest.xml:28:18-86
 20        android:dataExtractionRules="@xml/data_extraction_rules"
 20-->/home/ark/Desktop/chatapp_project/app/src/main/AndroidManifest.xml:6:9-65
 21        android:extractNativeLibs="false"
@@ -63,19 +63,19 @@
 38        </activity>
 39
 40        <provider
-40-->[androidx.emoji2:emoji2:1.3.0] /home/ark/.gradle/caches/8.14.1/transforms/8995ff630931b2772c3010b7c58e8669/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+40-->[androidx.emoji2:emoji2:1.4.0] /home/ark/.gradle/caches/8.14.1/transforms/d922b84921ad2fc902afaf2a4c98440f/transformed/jetified-emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
 41            android:name="androidx.startup.InitializationProvider"
-41-->[androidx.emoji2:emoji2:1.3.0] /home/ark/.gradle/caches/8.14.1/transforms/8995ff630931b2772c3010b7c58e8669/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:25:13-67
+41-->[androidx.emoji2:emoji2:1.4.0] /home/ark/.gradle/caches/8.14.1/transforms/d922b84921ad2fc902afaf2a4c98440f/transformed/jetified-emoji2-1.4.0/AndroidManifest.xml:25:13-67
 42            android:authorities="com.aarchangel.chatapp.androidx-startup"
-42-->[androidx.emoji2:emoji2:1.3.0] /home/ark/.gradle/caches/8.14.1/transforms/8995ff630931b2772c3010b7c58e8669/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:26:13-68
+42-->[androidx.emoji2:emoji2:1.4.0] /home/ark/.gradle/caches/8.14.1/transforms/d922b84921ad2fc902afaf2a4c98440f/transformed/jetified-emoji2-1.4.0/AndroidManifest.xml:26:13-68
 43            android:exported="false" >
-43-->[androidx.emoji2:emoji2:1.3.0] /home/ark/.gradle/caches/8.14.1/transforms/8995ff630931b2772c3010b7c58e8669/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:27:13-37
+43-->[androidx.emoji2:emoji2:1.4.0] /home/ark/.gradle/caches/8.14.1/transforms/d922b84921ad2fc902afaf2a4c98440f/transformed/jetified-emoji2-1.4.0/AndroidManifest.xml:27:13-37
 44            <meta-data
-44-->[androidx.emoji2:emoji2:1.3.0] /home/ark/.gradle/caches/8.14.1/transforms/8995ff630931b2772c3010b7c58e8669/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+44-->[androidx.emoji2:emoji2:1.4.0] /home/ark/.gradle/caches/8.14.1/transforms/d922b84921ad2fc902afaf2a4c98440f/transformed/jetified-emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
 45                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-45-->[androidx.emoji2:emoji2:1.3.0] /home/ark/.gradle/caches/8.14.1/transforms/8995ff630931b2772c3010b7c58e8669/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:30:17-75
+45-->[androidx.emoji2:emoji2:1.4.0] /home/ark/.gradle/caches/8.14.1/transforms/d922b84921ad2fc902afaf2a4c98440f/transformed/jetified-emoji2-1.4.0/AndroidManifest.xml:30:17-75
 46                android:value="androidx.startup" />
-46-->[androidx.emoji2:emoji2:1.3.0] /home/ark/.gradle/caches/8.14.1/transforms/8995ff630931b2772c3010b7c58e8669/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:31:17-49
+46-->[androidx.emoji2:emoji2:1.4.0] /home/ark/.gradle/caches/8.14.1/transforms/d922b84921ad2fc902afaf2a4c98440f/transformed/jetified-emoji2-1.4.0/AndroidManifest.xml:31:17-49
 47            <meta-data
 47-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/ark/.gradle/caches/8.14.1/transforms/8342f97e6a646f851d6e38c417d9b486/transformed/jetified-lifecycle-process-2.6.2/AndroidManifest.xml:29:13-31:52
 48                android:name="androidx.lifecycle.ProcessLifecycleInitializer"

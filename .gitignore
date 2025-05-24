@@ -1,0 +1,53 @@
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.factorypath
+build/
+local.properties
+*.DS_Store
+
+# Gradle files
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+*.jar
+*~
+# Built application files
+*.apk
+*.ap_
+*.aab
+*.aar
+
+# Android Studio profiling data
+*.hprof
+*.snapshot
+
+# Keystore files
+*.jks
+*.keystore
+
+# Google services
+google-services.json
+
+# Local configuration (sensitive information)
+secrets.properties
+
+# NDK files
+obj/
+libs/
+# Support for Flutter modules
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.metadata
+# Intellij
+misc.xml
+modules.xml
+workspace.xml
+# VS Code
+.vscode/ 

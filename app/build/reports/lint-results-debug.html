@@ -177,9 +177,9 @@ document.getElementById(id).style.display = 'none';
 <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
   <header class="mdl-layout__header">
     <div class="mdl-layout__header-row">
-      <span class="mdl-layout-title">Lint Report: 8 warnings</span>
+      <span class="mdl-layout-title">Lint Report: 9 warnings</span>
       <div class="mdl-layout-spacer"></div>
-      <nav class="mdl-navigation mdl-layout--large-screen-only">Check performed at Fri May 23 21:52:20 IST 2025 by AGP (8.2.0)</nav>
+      <nav class="mdl-navigation mdl-layout--large-screen-only">Check performed at Sat May 24 09:14:41 IST 2025 by AGP (8.2.0)</nav>
     </div>
   </header>
   <div class="mdl-layout__drawer">
@@ -188,7 +188,7 @@ document.getElementById(id).style.display = 'none';
       <a class="mdl-navigation__link" href="#overview"><i class="material-icons">dashboard</i>Overview</a>
       <a class="mdl-navigation__link" href="#OldTargetApi"><i class="material-icons warning-icon">warning</i>Target SDK attribute is not targeting latest version (1)</a>
       <a class="mdl-navigation__link" href="#RedundantLabel"><i class="material-icons warning-icon">warning</i>Redundant label on activity (1)</a>
-      <a class="mdl-navigation__link" href="#GradleDependency"><i class="material-icons warning-icon">warning</i>Obsolete Gradle Dependency (6)</a>
+      <a class="mdl-navigation__link" href="#GradleDependency"><i class="material-icons warning-icon">warning</i>Obsolete Gradle Dependency (7)</a>
     </nav>
   </div>
   <main class="mdl-layout__content">
@@ -210,9 +210,9 @@ document.getElementById(id).style.display = 'none';
 <td class="countColumn">1</td><td class="issueColumn"><i class="material-icons warning-icon">warning</i>
 <a href="#RedundantLabel">RedundantLabel</a>: Redundant label on activity</td></tr>
 <tr>
-<td class="countColumn">6</td><td class="issueColumn"><i class="material-icons warning-icon">warning</i>
+<td class="countColumn">7</td><td class="issueColumn"><i class="material-icons warning-icon">warning</i>
 <a href="#GradleDependency">GradleDependency</a>: Obsolete Gradle Dependency</td></tr>
-<tr><td></td><td class="categoryColumn"><a href="#ExtraIssues">Included Additional Checks (54)</a>
+<tr><td></td><td class="categoryColumn"><a href="#ExtraIssues">Included Additional Checks (64)</a>
 </td></tr>
 <tr><td></td><td class="categoryColumn"><a href="#MissingIssues">Disabled Checks (41)</a>
 </td></tr>
@@ -363,29 +363,39 @@ Dismiss</button>            </div>
 <span class="lineno"> 60 </span>    implementation("androidx.compose.ui:ui-tooling-preview")
 <span class="lineno"> 61 </span>    implementation("androidx.compose.material3:material3")
 <span class="caretline"><span class="lineno"> 62 </span>    implementation("<span class="warning">com.google.android.material:material:1.10.0</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 63 </span>    testImplementation("junit:junit:4.13.2")
-<span class="lineno"> 64 </span>    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-<span class="lineno"> 65 </span>    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+<span class="lineno"> 63 </span>    implementation("androidx.navigation:navigation-compose:2.7.7")
+<span class="lineno"> 64 </span>    testImplementation("junit:junit:4.13.2")
+<span class="lineno"> 65 </span>    androidTestImplementation("androidx.test.ext:junit:1.1.5")
 </pre>
 
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:64</span>: <span class="message">A newer version of androidx.test.ext:junit than 1.1.5 is available: 1.2.1</span><br /><pre class="errorlines">
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:63</span>: <span class="message">A newer version of androidx.navigation:navigation-compose than 2.7.7 is available: 2.9.0</span><br /><pre class="errorlines">
+<span class="lineno"> 60 </span>    implementation("androidx.compose.ui:ui-tooling-preview")
 <span class="lineno"> 61 </span>    implementation("androidx.compose.material3:material3")
 <span class="lineno"> 62 </span>    implementation("com.google.android.material:material:1.10.0")
-<span class="lineno"> 63 </span>    testImplementation("junit:junit:4.13.2")
-<span class="caretline"><span class="lineno"> 64 </span>    androidTestImplementation("<span class="warning">androidx.test.ext:junit:1.1.5</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 65 </span>    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-<span class="lineno"> 66 </span>    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
-<span class="lineno"> 67 </span>    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+<span class="caretline"><span class="lineno"> 63 </span>    implementation("<span class="warning">androidx.navigation:navigation-compose:2.7.7</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 64 </span>    testImplementation("junit:junit:4.13.2")
+<span class="lineno"> 65 </span>    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+<span class="lineno"> 66 </span>    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 </pre>
 
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:65</span>: <span class="message">A newer version of androidx.test.espresso:espresso-core than 3.5.1 is available: 3.6.1</span><br /><pre class="errorlines">
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:65</span>: <span class="message">A newer version of androidx.test.ext:junit than 1.1.5 is available: 1.2.1</span><br /><pre class="errorlines">
 <span class="lineno"> 62 </span>    implementation("com.google.android.material:material:1.10.0")
-<span class="lineno"> 63 </span>    testImplementation("junit:junit:4.13.2")
-<span class="lineno"> 64 </span>    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-<span class="caretline"><span class="lineno"> 65 </span>    androidTestImplementation("<span class="warning">androidx.test.espresso:espresso-core:3.5.1</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 66 </span>    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
-<span class="lineno"> 67 </span>    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-<span class="lineno"> 68 </span>    debugImplementation("androidx.compose.ui:ui-tooling")
+<span class="lineno"> 63 </span>    implementation("androidx.navigation:navigation-compose:2.7.7")
+<span class="lineno"> 64 </span>    testImplementation("junit:junit:4.13.2")
+<span class="caretline"><span class="lineno"> 65 </span>    androidTestImplementation("<span class="warning">androidx.test.ext:junit:1.1.5</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 66 </span>    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+<span class="lineno"> 67 </span>    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
+<span class="lineno"> 68 </span>    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+</pre>
+
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:66</span>: <span class="message">A newer version of androidx.test.espresso:espresso-core than 3.5.1 is available: 3.6.1</span><br /><pre class="errorlines">
+<span class="lineno"> 63 </span>    implementation("androidx.navigation:navigation-compose:2.7.7")
+<span class="lineno"> 64 </span>    testImplementation("junit:junit:4.13.2")
+<span class="lineno"> 65 </span>    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+<span class="caretline"><span class="lineno"> 66 </span>    androidTestImplementation("<span class="warning">androidx.test.espresso:espresso-core:3.5.1</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 67 </span>    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
+<span class="lineno"> 68 </span>    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+<span class="lineno"> 69 </span>    debugImplementation("androidx.compose.ui:ui-tooling")
 </pre>
 
 </div>
@@ -429,6 +439,44 @@ whether a particular check is included in analysis when configuring builds.
 (Note that the list does not include the hundreds of built-in checks into lint,
 only additional ones.)
 <div id="IncludedIssues" style="display: none;"><br/><br/><div class="issue">
+<div class="id">AutoboxingStateCreation<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+Calling <code>mutableStateOf&lt;T>()</code> when <code>T</code> is either backed by a primitive type on the JVM or is a value class results in a state implementation that requires all state values to be boxed. This usually causes an additional allocation for each state write, and adds some additional work to auto-unbox values when reading the value of the state. Instead, prefer to use a specialized primitive state implementation for <code>Int</code>, <code>Long</code>, <code>Float</code>, and <code>Double</code> when the state does not need to track null values and does not override the default <code>SnapshotMutationPolicy</code>.<br/><div class="vendor">
+Vendor: Jetpack Compose<br/>
+Identifier: androidx.compose.runtime<br/>
+Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
+<div class="id">AutoboxingStateValueProperty<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+Avoid using the generic value accessor when using a State objects with a specialized types. Usages of the generic value property result in an unnecessary autoboxing operation whenever the state's value is read or written to. Use the specialized value accessor or property delegation to avoid unnecessary allocations.<br/><div class="vendor">
+Vendor: Jetpack Compose<br/>
+Identifier: androidx.compose.runtime<br/>
+Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
+<div class="id">ComposableDestinationInComposeScope<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+Composable destinations should only be constructed directly within a NavGraphBuilder scope. Composable destinations cannot not be nested, and you should use the <code>navigation</code> function to create a nested graph instead.<br/><div class="vendor">
+Vendor: Jetpack Navigation Compose<br/>
+Identifier: androidx.navigation.compose<br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
 <div class="id">ComposableModifierFactory<div class="issueSeparator"></div>
 </div>
 <div class="metadata"><div class="explanation">
@@ -449,6 +497,18 @@ Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">
 Vendor: Jetpack Compose<br/>
 Identifier: androidx.compose.runtime<br/>
 Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
+<div class="id">ComposableNavGraphInComposeScope<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+Composable destinations should only be constructed directly within a NavGraphBuilder scope.<br/><div class="vendor">
+Vendor: Jetpack Navigation Compose<br/>
+Identifier: androidx.navigation.compose<br/>
 </div>
 <br/>
 <br/></div>
@@ -488,6 +548,32 @@ Creating a coroutine with <code>async</code> or <code>launch</code> during compo
 Vendor: Jetpack Compose<br/>
 Identifier: androidx.compose.runtime<br/>
 Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
+<div class="id">DeepLinkInActivityDestination<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+Attaching a &lt;deeplink> to an &lt;activity> destination will never give                 the right behavior when using an implicit deep link on another app's task                 (where the system back should immediately take the user back to the app that                 triggered the deep link). Instead, attach the deep link directly to                 the second activity (either by manually writing the appropriate &lt;intent-filter>                 or by adding the &lt;deeplink> to the start destination of a nav host in that second                 activity).<br/><div class="vendor">
+Vendor: Android Open Source Project<br/>
+Identifier: androidx.navigation.runtime<br/>
+Feedback: <a href="https://issuetracker.google.com/issues/new?component=409828">https://issuetracker.google.com/issues/new?component=409828</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
+<div class="id">EmptyNavDeepLink<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+Attempting to create an empty NavDeepLink will result in an IllegalStateException at runtime. You may set these arguments within the lambda of the call to navDeepLink.<br/><div class="vendor">
+Vendor: Android Open Source Project<br/>
+Identifier: androidx.navigation.common<br/>
+Feedback: <a href="https://issuetracker.google.com/issues/new?component=409828">https://issuetracker.google.com/issues/new?component=409828</a><br/>
 </div>
 <br/>
 <br/></div>
@@ -760,6 +846,19 @@ Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">
 </div>
 </div>
 <div class="issue">
+<div class="id">OpaqueUnitKey<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+Certain Compose functions including <code>remember</code>, <code>LaunchedEffect</code>, and <code>DisposableEffect</code> declare (and sometimes require) one or more key parameters. When a key parameter changes, it is a signal that the previous invocation is now invalid. In certain cases, it may be required to pass <code>Unit</code> as a key to one of these functions, indicating that the invocation never becomes invalid. Using <code>Unit</code> as a key should be done infrequently, and should always be done explicitly by passing the <code>Unit</code> literal. This inspection checks for invocations where <code>Unit</code> is being passed as a key argument in any form other than the <code>Unit</code> literal. This is usually done by mistake, and can harm readability. If a Unit expression is being passed as a key, it is always equivalent to move the expression before the function invocation and pass the <code>Unit</code> literal instead.<br/><div class="vendor">
+Vendor: Jetpack Compose<br/>
+Identifier: androidx.compose.runtime<br/>
+Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
 <div class="id">ProduceStateDoesNotAssignValue<div class="issueSeparator"></div>
 </div>
 <div class="metadata"><div class="explanation">
@@ -838,6 +937,19 @@ Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">
 </div>
 </div>
 <div class="issue">
+<div class="id">SuspiciousCompositionLocalModifierRead<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+Jetpack Compose is unable to send updated values of a CompositionLocal when it's read in a Modifier.Node's initializer and onAttach() or onDetach() callbacks. Modifier.Node's callbacks are not aware of snapshot reads, and their lifecycle callbacks are not invoked on every recomposition. If you read a CompositionLocal in onAttach() or onDetach(), you will only get the CompositionLocal's value once at the moment of the read, which may lead to unexpected behaviors. We recommend instead reading CompositionLocals at time-of-use in callbacks that apply your Modifier's behavior, like measure() for LayoutModifierNode, draw() for DrawModifierNode, and so on. To observe the value of the CompositionLocal manually, extend from the ObserverNode interface and place the read inside an observeReads {} block within the onObservedReadsChanged() callback.<br/><div class="vendor">
+Vendor: Jetpack Compose<br/>
+Identifier: androidx.compose.ui<br/>
+Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
 <div class="id">TestManifestGradleConfiguration<div class="issueSeparator"></div>
 </div>
 <div class="metadata"><div class="explanation">
@@ -872,6 +984,18 @@ Animatable instances created during composition need to be `remember`ed, otherwi
 Vendor: Jetpack Compose<br/>
 Identifier: androidx.compose.animation.core<br/>
 Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
+<div class="id">UnrememberedGetBackStackEntry<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+Backstack entries retrieved during composition need to be `remember`ed, otherwise they will be retrieved from the navController again, and be changed. You also need to pass in a key of a NavBackStackEntry to the remember call or they will not be updated properly. If this is in a <code>NavGraphBuilder.composable</code> scope, you should pass in the lambda's given entry as the key. Either hoist the state to an object that is not created during composition, or wrap the state in a call to <code>remember</code> with a <code>NavBackStackEntry</code> as a key.<br/><div class="vendor">
+Vendor: Jetpack Navigation Compose<br/>
+Identifier: androidx.navigation.compose<br/>
 </div>
 <br/>
 <br/></div>
@@ -960,6 +1084,19 @@ as a comma-delimited list of opted-in annotations:<br/>
 Vendor: Android Open Source Project<br/>
 Identifier: androidx.annotation.experimental<br/>
 Feedback: <a href="https://issuetracker.google.com/issues/new?component=459778">https://issuetracker.google.com/issues/new?component=459778</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
+<div class="id">UnusedContentLambdaTargetStateParameter<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+<code>content</code> lambda in AnimatedContent works as a lookup function that returns the corresponding content based on the parameter (a state of type <code>T</code>). It is important for this lambda to return content <i>specific</i> to the input parameter, so that the different contents can be properly animated. Not using the input parameter to the content lambda will result in the same content for different input (i.e. target state) and therefore an erroneous transition between the exact same content.`<br/><div class="vendor">
+Vendor: Jetpack Compose<br/>
+Identifier: androidx.compose.animation<br/>
+Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
 </div>
 <br/>
 <br/></div>

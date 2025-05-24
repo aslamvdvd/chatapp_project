@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.aarchangel.chatapp-mergeReleaseResources-51:/values-ldltr-v21/values-ldltr-v21.xml",
+            "outputFile": "com.aarchangel.chatapp-mergeReleaseResources-57:/values-ldltr-v21/values-ldltr-v21.xml",
             "map": [
                 {
                     "source": "/home/ark/.gradle/caches/8.14.1/transforms/8bacf8c0e344e3475aa80b417b3032dd/transformed/appcompat-1.6.1/res/values-ldltr-v21/values-ldltr-v21.xml",

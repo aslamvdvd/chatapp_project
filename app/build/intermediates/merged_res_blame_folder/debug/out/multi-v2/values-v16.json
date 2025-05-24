@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.aarchangel.chatapp-mergeDebugResources-55:/values-v16/values-v16.xml",
+            "outputFile": "com.aarchangel.chatapp-mergeDebugResources-61:/values-v16/values-v16.xml",
             "map": [
                 {
                     "source": "/home/ark/.gradle/caches/8.14.1/transforms/8bacf8c0e344e3475aa80b417b3032dd/transformed/appcompat-1.6.1/res/values-v16/values-v16.xml",
@@ -23,7 +23,7 @@
                     }
                 },
                 {
-                    "source": "/home/ark/.gradle/caches/8.14.1/transforms/3b90a9d60c7f622d50c4f7ab1a0912f3/transformed/core-1.9.0/res/values-v16/values-v16.xml",
+                    "source": "/home/ark/.gradle/caches/8.14.1/transforms/1776be6f8b7f0958a49c310b208974b7/transformed/core-1.10.0/res/values-v16/values-v16.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
