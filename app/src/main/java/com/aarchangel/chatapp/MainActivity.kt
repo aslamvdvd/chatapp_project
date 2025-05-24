@@ -5,45 +5,35 @@ package com.aarchangel.chatapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.aarchangel.chatapp.config.AppConfig
 import com.aarchangel.chatapp.ui.screens.AuthOptionsScreen
 import com.aarchangel.chatapp.ui.screens.WelcomeScreen
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
-import com.aarchangel.chatapp.config.AppConfig
-import androidx.compose.material3.ExperimentalMaterial3Api
 
-// KDoc for MainActivity
 /**
  * Main activity for the ChatApp application.
  * This activity serves as the entry point and hosts the Jetpack Compose UI navigation.
@@ -59,7 +49,7 @@ class MainActivity : ComponentActivity() {
      * shut down then this Bundle contains the data it most recently supplied in onSaveInstanceState(Bundle).
      * Note: Otherwise it is null.
      */
-    @OptIn(ExperimentalAnimationApi::class)
+    @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -70,10 +60,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// KDoc for ChatAppNavigation
 /**
- * Composable function that sets up the navigation graph for the ChatApp.
- * It uses a NavHost to define navigation routes and associate them with composable screens.
+ * Sets up the navigation graph and shared UI elements like the header.
  * // ChatApp by aarchangel
  */
 @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
@@ -84,50 +72,104 @@ fun ChatAppNavigation() {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
+    // Animation states based on current route
+    val isWelcomeScreen = currentRoute == "welcome"
+    val isAuthOptionsScreen = currentRoute == "auth_options/{flowType}"
+
+    val sloganFontSize by animateFloatAsState(
+        targetValue = if (isWelcomeScreen) 18f else 14f, // sp values
+        animationSpec = tween(durationMillis = 300),
+        label = "Slogan Font Size"
+    )
+    val headerPaddingTop by animateDpAsState(
+        targetValue = if (isWelcomeScreen) 64.dp else 48.dp, // Reduced for welcome
+        animationSpec = tween(durationMillis = 300),
+        label = "Header Padding Top"
+    )
+    val headerPaddingBottom by animateDpAsState(
+        targetValue = if (isWelcomeScreen) 16.dp else 16.dp, // REDUCED welcome bottom padding from 32dp
+        animationSpec = tween(durationMillis = 300), label = "headerPaddingBottom"
+    )
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding), // Apply padding from Scaffold
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(innerPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center // Center the whole content block
         ) {
-            // Animated Title and Slogan
-            AnimatedVisibility(
-                visible = currentRoute == "welcome",
-                enter = slideInVertically(initialOffsetY = { -it / 2 }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { -it / 2 }) + fadeOut()
+            // Persistent Header: Platform Name, Slogan, and Auth Options Title
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // headerPaddingTop animates the top padding of this inner column
+                    .padding(top = headerPaddingTop, start = 32.dp, end = 32.dp, bottom = headerPaddingBottom),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(top = 32.dp, bottom = 16.dp) // Add some padding
-                ) {
-                    Text(
-                        text = AppConfig.PLATFORM_NAME,
-                        style = MaterialTheme.typography.headlineLarge
+                Text(
+                    text = AppConfig.PLATFORM_NAME,
+                    style = MaterialTheme.typography.headlineLarge
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = AppConfig.PLATFORM_SLOGAN,
+                    style = TextStyle( // Animate font size
+                        fontSize = sloganFontSize.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f) // Slightly dimmer
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                AnimatedVisibility(
+                    visible = isAuthOptionsScreen,
+                    enter = fadeIn(animationSpec = tween(delayMillis = 150)) + slideInVertically(),
+                    exit = fadeOut() + slideOutVertically()
+                ) {
+                    val flowType = currentBackStackEntry?.arguments?.getString("flowType") ?: "login"
+                    val authOptionsTitle = if (flowType == "signup") "Choose Sign Up Method" else "Choose Log In Method"
                     Text(
-                        text = "Private. Secure. Modern.",
-                        style = MaterialTheme.typography.titleMedium
+                        text = authOptionsTitle,
+                        style = MaterialTheme.typography.titleMedium, // Bigger than small slogan
+                        modifier = Modifier.padding(top = 8.dp)
                     )
                 }
             }
 
+            // Spacer(modifier = Modifier.weight(0.2f)) // Removed example spacer
+
             NavHost(
                 navController = navController,
-                startDestination = "welcome",
-                // Modifier.padding(innerPadding) removed as Column handles Scaffold padding
+                startDestination = "welcome"
+                // Modifier.weight(1f) removed - NavHost will wrap its content height
             ) {
-                composable("welcome") {
-                    // Welcome screen content will now be mostly buttons, title/slogan are above
-                    WelcomeScreen(navController = navController, showTitleAndSlogan = false)
+                composable(
+                    "welcome",
+                    exitTransition = { fadeOut(animationSpec = tween(durationMillis = 200)) },
+                    popEnterTransition = { fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 200)) }
+                ) {
+                    WelcomeScreen(navController = navController)
                 }
-                composable("auth_options") {
-                    AuthOptionsScreen(navController = navController, snackbarHostState = snackbarHostState)
+                composable(
+                    route = "auth_options/{flowType}",
+                    arguments = listOf(navArgument("flowType") { type = NavType.StringType }),
+                    enterTransition = { fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 200)) },
+                    popExitTransition = { fadeOut(animationSpec = tween(durationMillis = 200)) }
+                ) { backStackEntry ->
+                    val flowType = backStackEntry.arguments?.getString("flowType") ?: "login"
+                    AuthOptionsScreen(
+                        navController = navController,
+                        snackbarHostState = snackbarHostState,
+                        flowType = flowType
+                    )
                 }
-                composable("email_auth") {
+                composable(
+                    "email_auth",
+                    enterTransition = { fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 200)) },
+                    popExitTransition = { fadeOut(animationSpec = tween(durationMillis = 200)) }
+                ) { // Placeholder
                     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                         Box(contentAlignment = Alignment.Center) {
                             Text("Email Authentication Screen (TODO)", style = MaterialTheme.typography.titleLarge)
@@ -139,16 +181,15 @@ fun ChatAppNavigation() {
     }
 }
 
-// KDoc for MainActivityPreview
 /**
  * A preview composable for the MainActivity content (ChatAppNavigation).
  * This allows for quick visualization of the navigation setup in Android Studio's preview panel.
  * // ChatApp by aarchangel
  */
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "ChatApp - Welcome")
 @Composable
-fun MainActivityPreview() {
-    ChatAppTheme {
-        ChatAppNavigation()
-    }
-} 
+fun ChatAppNavigationPreviewWelcome() {
+    ChatAppTheme { ChatAppNavigation() }
+}
+
+// Add more specific previews if needed for different states of ChatAppNavigation 

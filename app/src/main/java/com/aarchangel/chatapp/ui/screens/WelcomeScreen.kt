@@ -12,21 +12,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.aarchangel.chatapp.config.AppConfig
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 
 /**
  * The Welcome Screen for the ChatApp.
- * Displays the platform name, a subtitle, and options to Sign Up or Log In.
- * If showTitleAndSlogan is false, it only shows the action buttons, assuming
- * the title and slogan are displayed by a parent composable (e.g., for animations).
+ * Displays options to Sign Up or Log In.
+ * The main platform title and slogan are handled by a shared header component.
  * // ChatApp by aarchangel
  *
  * @param navController The NavController used for navigating to other screens.
- * @param showTitleAndSlogan Whether to display the title and slogan within this screen.
  */
 @Composable
-fun WelcomeScreen(navController: NavController, showTitleAndSlogan: Boolean = true) {
+fun WelcomeScreen(navController: NavController) {
     ChatAppTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -34,30 +31,12 @@ fun WelcomeScreen(navController: NavController, showTitleAndSlogan: Boolean = tr
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (showTitleAndSlogan) {
-                    Text(
-                        text = AppConfig.PLATFORM_NAME,
-                        style = MaterialTheme.typography.headlineLarge
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Private. Secure. Modern.",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
-
-                if (!showTitleAndSlogan) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-
                 Button(
-                    onClick = { navController.navigate("auth_options") /* TODO: Navigate to SignUpScreen -> Now AuthOptions */ },
+                    onClick = { navController.navigate("auth_options/signup") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 32.dp),
@@ -68,7 +47,7 @@ fun WelcomeScreen(navController: NavController, showTitleAndSlogan: Boolean = tr
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { navController.navigate("auth_options") /* TODO: Navigate to LoginScreen -> Now AuthOptions */ },
+                    onClick = { navController.navigate("auth_options/login") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 32.dp),
@@ -77,32 +56,20 @@ fun WelcomeScreen(navController: NavController, showTitleAndSlogan: Boolean = tr
                 ) {
                     Text(text = "Log In")
                 }
-
-                if (!showTitleAndSlogan) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
             }
         }
     }
 }
 
 /**
- * Preview for the WelcomeScreen.
+ * Preview for the WelcomeScreen (now buttons only).
  * Provides a design-time view of the WelcomeScreen in Android Studio.
  * // ChatApp by aarchangel
  */
-@Preview(showBackground = true, name = "Welcome Screen with Title")
+@Preview(showBackground = true, name = "Welcome Screen Buttons")
 @Composable
-fun WelcomeScreenPreviewWithTitle() {
+fun WelcomeScreenPreview() {
     ChatAppTheme {
-        WelcomeScreen(navController = rememberNavController(), showTitleAndSlogan = true)
-    }
-}
-
-@Preview(showBackground = true, name = "Welcome Screen (Buttons Only)")
-@Composable
-fun WelcomeScreenPreviewButtonsOnly() {
-    ChatAppTheme {
-        WelcomeScreen(navController = rememberNavController(), showTitleAndSlogan = false)
+        WelcomeScreen(navController = rememberNavController())
     }
 } 

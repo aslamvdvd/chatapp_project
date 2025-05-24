@@ -15,6 +15,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 
 /**
  * Authentication Options Screen for ChatApp.
@@ -23,10 +25,12 @@ import kotlinx.coroutines.launch
  *
  * @param navController The NavController for navigation.
  * @param snackbarHostState The ScaffoldMessengerState to show Snackbars.
+ * @param flowType A string indicating if the flow is for "signup" or "login" (currently not used for title here, but kept for potential future use).
  */
 @Composable
-fun AuthOptionsScreen(navController: NavController, snackbarHostState: SnackbarHostState) {
+fun AuthOptionsScreen(navController: NavController, snackbarHostState: SnackbarHostState, flowType: String) {
     val scope = rememberCoroutineScope()
+    // val titleText = if (flowType == "signup") "Choose Sign Up Method" else "Choose Log In Method" // Title now handled by SharedHeader
 
     ChatAppTheme {
         Surface(
@@ -34,18 +38,10 @@ fun AuthOptionsScreen(navController: NavController, snackbarHostState: SnackbarH
             color = MaterialTheme.colorScheme.background
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Choose Authentication Method",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 32.dp)
-                )
-
                 Button(
                     onClick = { navController.navigate("email_auth") },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 8.dp),
@@ -89,6 +85,19 @@ fun AuthOptionsScreen(navController: NavController, snackbarHostState: SnackbarH
                 ) {
                     Text("Continue with Apple")
                 }
+
+                // Back Button
+                Button(
+                    onClick = { navController.popBackStack("welcome", inclusive = false) },
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(bottom = 16.dp, start = 16.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back to Welcome")
+                    Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Back")
+                }
             }
         }
     }
@@ -99,13 +108,26 @@ fun AuthOptionsScreen(navController: NavController, snackbarHostState: SnackbarH
  * Provides a design-time view of the AuthOptionsScreen in Android Studio.
  * // ChatApp by aarchangel
  */
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Auth Options - Sign Up")
 @Composable
-fun AuthOptionsScreenPreview() {
+fun AuthOptionsScreenSignUpPreview() {
     ChatAppTheme {
         AuthOptionsScreen(
             navController = rememberNavController(),
-            snackbarHostState = SnackbarHostState()
+            snackbarHostState = SnackbarHostState(),
+            flowType = "signup"
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Auth Options - Log In")
+@Composable
+fun AuthOptionsScreenLoginPreview() {
+    ChatAppTheme {
+        AuthOptionsScreen(
+            navController = rememberNavController(),
+            snackbarHostState = SnackbarHostState(),
+            flowType = "login"
         )
     }
 } 
