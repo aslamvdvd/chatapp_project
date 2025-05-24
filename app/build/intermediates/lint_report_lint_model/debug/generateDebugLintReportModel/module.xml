@@ -1,13 +1,13 @@
 <lint-module
     format="1"
-    dir="/home/ark/Desktop/chatapp_project/app"
+    dir="/home/aarchangel/Desktop/chatapp_project/app"
     name=":app"
     type="APP"
-    maven="GhostTalk:app:"
-    agpVersion="8.2.0"
+    maven="GhostTalk:app:unspecified"
+    agpVersion="8.10.0"
     buildFolder="build"
-    bootClassPath="/home/ark/Android/Sdk/platforms/android-34/android.jar:/home/ark/Android/Sdk/build-tools/34.0.0/core-lambda-stubs.jar"
-    javaSourceLevel="1.8"
+    bootClassPath="/home/aarchangel/Android/Sdk/platforms/android-34/android.jar:/home/aarchangel/Android/Sdk/build-tools/35.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
     compileTarget="android-34"
     neverShrinking="true">
   <lintOptions

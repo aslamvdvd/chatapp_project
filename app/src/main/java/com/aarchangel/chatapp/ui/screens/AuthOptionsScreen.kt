@@ -14,89 +14,84 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
+import com.aarchangel.chatapp.ui.theme.Dimens
+import com.aarchangel.chatapp.viewmodel.AuthOptionsViewModel
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aarchangel.chatapp.ui.components.AppButton
 
 /**
  * Authentication Options Screen for ChatApp.
  * Provides various methods for users to sign up or log in.
  * // ChatApp by aarchangel
  *
- * @param navController The NavController for navigation.
- * @param snackbarHostState The ScaffoldMessengerState to show Snackbars.
- * @param flowType A string indicating if the flow is for "signup" or "login" (currently not used for title here, but kept for potential future use).
+ * @param flowType A string indicating if the flow is for "signup" or "login".
+ * @param authOptionsViewModel The ViewModel for this screen.
+ * @param onNavigateBack Lambda to call when the back button is pressed.
  */
 @Composable
-fun AuthOptionsScreen(navController: NavController, snackbarHostState: SnackbarHostState, flowType: String) {
-    val scope = rememberCoroutineScope()
-    // val titleText = if (flowType == "signup") "Choose Sign Up Method" else "Choose Log In Method" // Title now handled by SharedHeader
-
+fun AuthOptionsScreen(
+    flowType: String,
+    authOptionsViewModel: AuthOptionsViewModel = viewModel(),
+    onNavigateBack: () -> Unit
+) {
     ChatAppTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
+                modifier = Modifier.padding(Dimens.PaddingMedium),
+                verticalArrangement = Arrangement.spacedBy(Dimens.PaddingLarge),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Button(
-                    onClick = { navController.navigate("email_auth") },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Continue with Email")
-                }
+                // GhostTalk logo and slogan can remain if desired, or be removed if this screen is purely for *alternative* auth methods
+                // For now, let's keep them for consistency if user lands here from a different path in future.
 
+                Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
+
+                AppButton(
+                    text = "Continue with Email",
+                    onClick = { authOptionsViewModel.onContinueWithEmailClicked(flowType) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
+
+                AppButton(
+                    text = "Continue with Google",
+                    onClick = { authOptionsViewModel.onContinueWithGoogleClicked() },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+                AppButton(
+                    text = "Sign in with Apple",
+                    onClick = { authOptionsViewModel.onSignInWithAppleClicked() },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+                AppButton(
+                    text = "Use Phone Number",
+                    onClick = { authOptionsViewModel.onUsePhoneNumberClicked() },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Back Button - uses standard Button as it has custom alignment and icon
                 Button(
                     onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("TODO: Implement Phone Authentication")
-                        }
+                        authOptionsViewModel.onBackClicked()
+                        onNavigateBack()
                     },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Continue with Phone")
-                }
-
-                Button(
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("TODO: Implement Gmail Authentication")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Continue with Gmail")
-                }
-
-                Button(
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("TODO: Implement Apple Authentication")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Continue with Apple")
-                }
-
-                // Back Button
-                Button(
-                    onClick = { navController.popBackStack("welcome", inclusive = false) },
                     modifier = Modifier
                         .align(Alignment.Start)
-                        .padding(bottom = 16.dp, start = 16.dp),
-                    shape = RoundedCornerShape(12.dp)
+                        .padding(top = Dimens.PaddingMedium, bottom = Dimens.PaddingMedium, start = Dimens.PaddingMedium), // Adjusted padding
+                    shape = RoundedCornerShape(Dimens.RoundedCornerMedium),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary) // Different style for back
                 ) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back to Welcome")
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back to Welcome", tint = MaterialTheme.colorScheme.onSecondary)
                     Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                    Text("Back")
+                    Text("Back", color = MaterialTheme.colorScheme.onSecondary)
                 }
             }
         }
@@ -108,26 +103,38 @@ fun AuthOptionsScreen(navController: NavController, snackbarHostState: SnackbarH
  * Provides a design-time view of the AuthOptionsScreen in Android Studio.
  * // ChatApp by aarchangel
  */
-@Preview(showBackground = true, name = "Auth Options - Sign Up")
+@Preview(showBackground = true, name = "Auth Options - Default")
 @Composable
-fun AuthOptionsScreenSignUpPreview() {
+fun AuthOptionsScreenPreview() {
     ChatAppTheme {
         AuthOptionsScreen(
-            navController = rememberNavController(),
-            snackbarHostState = SnackbarHostState(),
-            flowType = "signup"
+            flowType = "signup",
+            authOptionsViewModel = AuthOptionsViewModel(),
+            onNavigateBack = {}
         )
     }
 }
 
-@Preview(showBackground = true, name = "Auth Options - Log In")
+@Preview(showBackground = true, name = "Auth Options - Dark", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun AuthOptionsScreenLoginPreview() {
+fun AuthOptionsScreenDarkPreview() {
     ChatAppTheme {
         AuthOptionsScreen(
-            navController = rememberNavController(),
-            snackbarHostState = SnackbarHostState(),
-            flowType = "login"
+            flowType = "login",
+            authOptionsViewModel = AuthOptionsViewModel(),
+            onNavigateBack = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Auth Options - Tablet", device = "spec:width=1280dp,height=800dp,dpi=240")
+@Composable
+fun AuthOptionsScreenTabletPreview() {
+    ChatAppTheme {
+        AuthOptionsScreen(
+            flowType = "signup",
+            authOptionsViewModel = AuthOptionsViewModel(),
+            onNavigateBack = {}
         )
     }
 } 

@@ -177,18 +177,19 @@ document.getElementById(id).style.display = 'none';
 <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
   <header class="mdl-layout__header">
     <div class="mdl-layout__header-row">
-      <span class="mdl-layout-title">Lint Report: 9 warnings</span>
+      <span class="mdl-layout-title">Lint Report: 14 warnings</span>
       <div class="mdl-layout-spacer"></div>
-      <nav class="mdl-navigation mdl-layout--large-screen-only">Check performed at Sat May 24 09:14:41 IST 2025 by AGP (8.2.0)</nav>
+      <nav class="mdl-navigation mdl-layout--large-screen-only">Check performed at Sat May 24 20:06:40 IST 2025 by AGP (8.10.0)</nav>
     </div>
   </header>
   <div class="mdl-layout__drawer">
     <span class="mdl-layout-title">Issue Types</span>
     <nav class="mdl-navigation">
       <a class="mdl-navigation__link" href="#overview"><i class="material-icons">dashboard</i>Overview</a>
+      <a class="mdl-navigation__link" href="#DefaultLocale"><i class="material-icons warning-icon">warning</i>Implied default locale in case conversion (1)</a>
       <a class="mdl-navigation__link" href="#OldTargetApi"><i class="material-icons warning-icon">warning</i>Target SDK attribute is not targeting latest version (1)</a>
       <a class="mdl-navigation__link" href="#RedundantLabel"><i class="material-icons warning-icon">warning</i>Redundant label on activity (1)</a>
-      <a class="mdl-navigation__link" href="#GradleDependency"><i class="material-icons warning-icon">warning</i>Obsolete Gradle Dependency (7)</a>
+      <a class="mdl-navigation__link" href="#GradleDependency"><i class="material-icons warning-icon">warning</i>Obsolete Gradle Dependency (11)</a>
     </nav>
   </div>
   <main class="mdl-layout__content">
@@ -205,14 +206,17 @@ document.getElementById(id).style.display = 'none';
 </td></tr>
 <tr>
 <td class="countColumn">1</td><td class="issueColumn"><i class="material-icons warning-icon">warning</i>
+<a href="#DefaultLocale">DefaultLocale</a>: Implied default locale in case conversion</td></tr>
+<tr>
+<td class="countColumn">1</td><td class="issueColumn"><i class="material-icons warning-icon">warning</i>
 <a href="#OldTargetApi">OldTargetApi</a>: Target SDK attribute is not targeting latest version</td></tr>
 <tr>
 <td class="countColumn">1</td><td class="issueColumn"><i class="material-icons warning-icon">warning</i>
 <a href="#RedundantLabel">RedundantLabel</a>: Redundant label on activity</td></tr>
 <tr>
-<td class="countColumn">7</td><td class="issueColumn"><i class="material-icons warning-icon">warning</i>
+<td class="countColumn">11</td><td class="issueColumn"><i class="material-icons warning-icon">warning</i>
 <a href="#GradleDependency">GradleDependency</a>: Obsolete Gradle Dependency</td></tr>
-<tr><td></td><td class="categoryColumn"><a href="#ExtraIssues">Included Additional Checks (64)</a>
+<tr><td></td><td class="categoryColumn"><a href="#ExtraIssues">Included Additional Checks (65)</a>
 </td></tr>
 <tr><td></td><td class="categoryColumn"><a href="#MissingIssues">Disabled Checks (41)</a>
 </td></tr>
@@ -224,7 +228,56 @@ Dismiss</button>            </div>
             </div>
           </section>
 <a name="Correctness"></a>
-<a name="OldTargetApi"></a>
+<a name="DefaultLocale"></a>
+<section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp" id="DefaultLocaleCard" style="display: block;">
+            <div class="mdl-card mdl-cell mdl-cell--12-col">
+  <div class="mdl-card__title">
+    <h2 class="mdl-card__title-text">Implied default locale in case conversion</h2>
+  </div>
+              <div class="mdl-card__supporting-text">
+<div class="issue">
+<div class="warningslist">
+<span class="location"><a href="../../src/main/java/com/aarchangel/chatapp/viewmodel/EmailAuthViewModel.kt">../../src/main/java/com/aarchangel/chatapp/viewmodel/EmailAuthViewModel.kt</a>:204</span>: <span class="message">Implicitly using the default locale is a common source of bugs: Use <code>capitalize(Locale)</code> instead. For strings meant to be internal use <code>Locale.ROOT</code>, otherwise <code>Locale.getDefault()</code>.</span><br /><pre class="errorlines">
+<span class="lineno"> 201 </span>  kotlinx.coroutines.delay(<span class="number">1500</span>) <span class="comment">// Simulate network request</span>
+<span class="lineno"> 202 </span>  _uiState.update { it.copy(isLoading = <span class="keyword">false</span>) }
+<span class="lineno"> 203 </span>  <span class="keyword">if</span> (state.email == <span class="string">"test@example.com"</span> &amp;&amp; state.password == <span class="string">"password"</span>) { <span class="comment">// Mock success</span>
+<span class="caretline"><span class="lineno"> 204 </span>      _snackbarMessage.emit(<span class="string">"${</span>state.flowType.<span class="warning">capitalize</span>()<span class="string">} successful for ${</span>state.email<span class="string">}"</span>)</span>
+<span class="lineno"> 205 </span>      <span class="comment">// TODO: Navigate to a Home/Main screen upon successful auth</span>
+<span class="lineno"> 206 </span>      <span class="comment">// _navigationEvent.emit(AppScreen.HomeScreen.route) // Example</span>
+<span class="lineno"> 207 </span>  } <span class="keyword">else</span> {
+</pre>
+
+</div>
+<div class="metadata"><div class="explanation" id="explanationDefaultLocale" style="display: none;">
+Calling <code>String#toLowerCase()</code> or <code>#toUpperCase()</code> <b>without specifying an explicit locale</b> is a common source of bugs. The reason for that is that those methods will use the current locale on the user's device, and even though the code appears to work correctly when you are developing the app, it will fail in some locales. For example, in the Turkish locale, the uppercase replacement for <code>i</code> is <b>not</b> <code>I</code>.<br/>
+<br/>
+If you want the methods to just perform ASCII replacement, for example to convert an enum name, call <code>String#toUpperCase(Locale.ROOT)</code> instead. If you really want to use the current locale, call <code>String#toUpperCase(Locale.getDefault())</code> instead.<br/><div class="moreinfo">More info: <a href="https://developer.android.com/reference/java/util/Locale.html#default_locale">https://developer.android.com/reference/java/util/Locale.html#default_locale</a>
+</div>Note: This issue has an associated quickfix operation in Android Studio and IntelliJ IDEA.<br>
+To suppress this error, use the issue id "DefaultLocale" as explained in the <a href="#SuppressInfo">Suppressing Warnings and Errors</a> section.<br/>
+<br/></div>
+</div>
+</div>
+<div class="chips">
+<span class="mdl-chip">
+    <span class="mdl-chip__text">DefaultLocale</span>
+</span>
+<span class="mdl-chip">
+    <span class="mdl-chip__text">Correctness</span>
+</span>
+<span class="mdl-chip">
+    <span class="mdl-chip__text">Warning</span>
+</span>
+<span class="mdl-chip">
+    <span class="mdl-chip__text">Priority 6/10</span>
+</span>
+</div>
+              </div>
+              <div class="mdl-card__actions mdl-card--border">
+<button class="mdl-button mdl-js-button mdl-js-ripple-effect" id="explanationDefaultLocaleLink" onclick="reveal('explanationDefaultLocale');">
+Explain</button><button class="mdl-button mdl-js-button mdl-js-ripple-effect" id="DefaultLocaleCardLink" onclick="hideid('DefaultLocaleCard');">
+Dismiss</button>            </div>
+            </div>
+          </section><a name="OldTargetApi"></a>
 <section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp" id="OldTargetApiCard" style="display: block;">
             <div class="mdl-card mdl-cell mdl-cell--12-col">
   <div class="mdl-card__title">
@@ -233,7 +286,7 @@ Dismiss</button>            </div>
               <div class="mdl-card__supporting-text">
 <div class="issue">
 <div class="warningslist">
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:13</span>: <span class="message">Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details.</span><br /><pre class="errorlines">
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:13</span>: <span class="message">Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the <code>android.os.Build.VERSION_CODES</code> javadoc for details.</span><br /><pre class="errorlines">
 <span class="lineno"> 10 </span>    defaultConfig {
 <span class="lineno"> 11 </span>        applicationId = "com.aarchangel.chatapp"
 <span class="lineno"> 12 </span>        minSdk = 24
@@ -244,7 +297,7 @@ Dismiss</button>            </div>
 
 </div>
 <div class="metadata"><div class="explanation" id="explanationOldTargetApi" style="display: none;">
-When your application runs on a version of Android that is more recent than your <code>targetSdkVersion</code> specifies that it has been tested with, various compatibility modes kick in. This ensures that your application continues to work, but it may look out of place. For example, if the <code>targetSdkVersion</code> is less than 14, your app may get an option button in the UI.<br/>
+When your application or sdk runs on a version of Android that is more recent than your <code>targetSdkVersion</code> specifies that it has been tested with, various compatibility modes kick in. This ensures that your application continues to work, but it may look out of place. For example, if the <code>targetSdkVersion</code> is less than 14, your app may get an option button in the UI.<br/>
 <br/>
 To fix this issue, set the <code>targetSdkVersion</code> to the highest available value. Then test your app to make sure everything works correctly. You may want to consult the compatibility notes to see what changes apply to each version you are adding support for: <a href="https://developer.android.com/reference/android/os/Build.VERSION_CODES.html">https://developer.android.com/reference/android/os/Build.VERSION_CODES.html</a> as well as follow this guide:<br/>
 <a href="https://developer.android.com/distribute/best-practices/develop/target-sdk.html">https://developer.android.com/distribute/best-practices/develop/target-sdk.html</a><br/><div class="moreinfo">More info: <ul><li><a href="https://developer.android.com/distribute/best-practices/develop/target-sdk.html">https://developer.android.com/distribute/best-practices/develop/target-sdk.html</a>
@@ -328,76 +381,113 @@ Dismiss</button>            </div>
               <div class="mdl-card__supporting-text">
 <div class="issue">
 <div class="warningslist">
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:54</span>: <span class="message">A newer version of androidx.core:core-ktx than 1.9.0 is available: 1.16.0</span><br /><pre class="errorlines">
-<span class="lineno"> 51 </span>
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:8</span>: <span class="message">A newer version of <code>compileSdkVersion</code> than 34 is available: 35</span><br /><pre class="errorlines">
+<span class="lineno">  5 </span>
+<span class="lineno">  6 </span>android {
+<span class="lineno">  7 </span>    namespace = "com.aarchangel.chatapp"
+<span class="caretline"><span class="lineno">  8 </span>    <span class="warning">compileSdk = 34</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno">  9 </span>
+<span class="lineno"> 10 </span>    defaultConfig {
+<span class="lineno"> 11 </span>        applicationId = "com.aarchangel.chatapp"
+</pre>
+
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:55</span>: <span class="message">A newer version of androidx.core:core-ktx than 1.9.0 is available: 1.16.0</span><br /><pre class="errorlines">
 <span class="lineno"> 52 </span>dependencies {
 <span class="lineno"> 53 </span>
-<span class="caretline"><span class="lineno"> 54 </span>    implementation("<span class="warning">androidx.core:core-ktx:1.9.0</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 55 </span>    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-<span class="lineno"> 56 </span>    implementation("androidx.activity:activity-compose:1.8.2")
-<span class="lineno"> 57 </span>    implementation(platform("androidx.compose:compose-bom:2023.03.00"))
+<span class="lineno"> 54 </span>    // Core &amp; Lifecycle
+<span class="caretline"><span class="lineno"> 55 </span>    implementation(<span class="warning">"androidx.core:core-ktx:1.9.0"</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 56 </span>    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+<span class="lineno"> 57 </span>    implementation("androidx.activity:activity-compose:1.8.2")
 </pre>
 
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:55</span>: <span class="message">A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.6.2 is available: 2.9.0</span><br /><pre class="errorlines">
-<span class="lineno"> 52 </span>dependencies {
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:56</span>: <span class="message">A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.6.2 is available: 2.9.0</span><br /><pre class="errorlines">
 <span class="lineno"> 53 </span>
-<span class="lineno"> 54 </span>    implementation("androidx.core:core-ktx:1.9.0")
-<span class="caretline"><span class="lineno"> 55 </span>    implementation("<span class="warning">androidx.lifecycle:lifecycle-runtime-ktx:2.6.2</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 56 </span>    implementation("androidx.activity:activity-compose:1.8.2")
-<span class="lineno"> 57 </span>    implementation(platform("androidx.compose:compose-bom:2023.03.00"))
-<span class="lineno"> 58 </span>    implementation("androidx.compose.ui:ui")
+<span class="lineno"> 54 </span>    // Core &amp; Lifecycle
+<span class="lineno"> 55 </span>    implementation("androidx.core:core-ktx:1.9.0")
+<span class="caretline"><span class="lineno"> 56 </span>    implementation(<span class="warning">"androidx.lifecycle:lifecycle-runtime-ktx:2.6.2"</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 57 </span>    implementation("androidx.activity:activity-compose:1.8.2")
+<span class="lineno"> 58 </span>
+<span class="lineno"> 59 </span>    // Jetpack Compose
 </pre>
 
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:56</span>: <span class="message">A newer version of androidx.activity:activity-compose than 1.8.2 is available: 1.10.1</span><br /><pre class="errorlines">
-<span class="lineno"> 53 </span>
-<span class="lineno"> 54 </span>    implementation("androidx.core:core-ktx:1.9.0")
-<span class="lineno"> 55 </span>    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-<span class="caretline"><span class="lineno"> 56 </span>    implementation("<span class="warning">androidx.activity:activity-compose:1.8.2</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 57 </span>    implementation(platform("androidx.compose:compose-bom:2023.03.00"))
-<span class="lineno"> 58 </span>    implementation("androidx.compose.ui:ui")
-<span class="lineno"> 59 </span>    implementation("androidx.compose.ui:ui-graphics")
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:57</span>: <span class="message">A newer version of androidx.activity:activity-compose than 1.8.2 is available: 1.10.1</span><br /><pre class="errorlines">
+<span class="lineno"> 54 </span>    // Core &amp; Lifecycle
+<span class="lineno"> 55 </span>    implementation("androidx.core:core-ktx:1.9.0")
+<span class="lineno"> 56 </span>    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+<span class="caretline"><span class="lineno"> 57 </span>    implementation(<span class="warning">"androidx.activity:activity-compose:1.8.2"</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 58 </span>
+<span class="lineno"> 59 </span>    // Jetpack Compose
+<span class="lineno"> 60 </span>    implementation(platform("androidx.compose:compose-bom:2023.03.00"))
 </pre>
 
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:62</span>: <span class="message">A newer version of com.google.android.material:material than 1.10.0 is available: 1.12.0</span><br /><pre class="errorlines">
-<span class="lineno"> 59 </span>    implementation("androidx.compose.ui:ui-graphics")
-<span class="lineno"> 60 </span>    implementation("androidx.compose.ui:ui-tooling-preview")
-<span class="lineno"> 61 </span>    implementation("androidx.compose.material3:material3")
-<span class="caretline"><span class="lineno"> 62 </span>    implementation("<span class="warning">com.google.android.material:material:1.10.0</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 63 </span>    implementation("androidx.navigation:navigation-compose:2.7.7")
-<span class="lineno"> 64 </span>    testImplementation("junit:junit:4.13.2")
-<span class="lineno"> 65 </span>    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:60</span>: <span class="message">A newer version of androidx.compose:compose-bom than 2023.03.00 is available: 2025.05.01</span><br /><pre class="errorlines">
+<span class="lineno"> 57 </span>    implementation("androidx.activity:activity-compose:1.8.2")
+<span class="lineno"> 58 </span>
+<span class="lineno"> 59 </span>    // Jetpack Compose
+<span class="caretline"><span class="lineno"> 60 </span>    implementation(<span class="warning">platform("androidx.compose:compose-bom:2023.03.00")</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 61 </span>    implementation("androidx.compose.ui:ui")
+<span class="lineno"> 62 </span>    implementation("androidx.compose.ui:ui-graphics")
+<span class="lineno"> 63 </span>    implementation("androidx.compose.ui:ui-tooling-preview")
 </pre>
 
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:63</span>: <span class="message">A newer version of androidx.navigation:navigation-compose than 2.7.7 is available: 2.9.0</span><br /><pre class="errorlines">
-<span class="lineno"> 60 </span>    implementation("androidx.compose.ui:ui-tooling-preview")
-<span class="lineno"> 61 </span>    implementation("androidx.compose.material3:material3")
-<span class="lineno"> 62 </span>    implementation("com.google.android.material:material:1.10.0")
-<span class="caretline"><span class="lineno"> 63 </span>    implementation("<span class="warning">androidx.navigation:navigation-compose:2.7.7</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 64 </span>    testImplementation("junit:junit:4.13.2")
-<span class="lineno"> 65 </span>    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-<span class="lineno"> 66 </span>    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+<button class="mdl-button mdl-js-button mdl-button--primary" id="GradleDependencyDivLink" onclick="reveal('GradleDependencyDiv');" />+ 6 More Occurrences...</button>
+<div id="GradleDependencyDiv" style="display: none">
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:65</span>: <span class="message">A newer version of androidx.compose.material:material-icons-extended than 1.6.7 is available: 1.7.8</span><br /><pre class="errorlines">
+<span class="lineno"> 62 </span>    implementation("androidx.compose.ui:ui-graphics")
+<span class="lineno"> 63 </span>    implementation("androidx.compose.ui:ui-tooling-preview")
+<span class="lineno"> 64 </span>    implementation("androidx.compose.material3:material3")
+<span class="caretline"><span class="lineno"> 65 </span>    implementation(<span class="warning">"androidx.compose.material:material-icons-extended:1.6.7"</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 66 </span>    debugImplementation("androidx.compose.ui:ui-tooling")
+<span class="lineno"> 67 </span>    debugImplementation("androidx.compose.ui:ui-test-manifest")
+<span class="lineno"> 68 </span>    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
 </pre>
 
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:65</span>: <span class="message">A newer version of androidx.test.ext:junit than 1.1.5 is available: 1.2.1</span><br /><pre class="errorlines">
-<span class="lineno"> 62 </span>    implementation("com.google.android.material:material:1.10.0")
-<span class="lineno"> 63 </span>    implementation("androidx.navigation:navigation-compose:2.7.7")
-<span class="lineno"> 64 </span>    testImplementation("junit:junit:4.13.2")
-<span class="caretline"><span class="lineno"> 65 </span>    androidTestImplementation("<span class="warning">androidx.test.ext:junit:1.1.5</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 66 </span>    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-<span class="lineno"> 67 </span>    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
-<span class="lineno"> 68 </span>    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:68</span>: <span class="message">A newer version of androidx.compose:compose-bom than 2023.03.00 is available: 2025.05.01</span><br /><pre class="errorlines">
+<span class="lineno"> 65 </span>    implementation("androidx.compose.material:material-icons-extended:1.6.7")
+<span class="lineno"> 66 </span>    debugImplementation("androidx.compose.ui:ui-tooling")
+<span class="lineno"> 67 </span>    debugImplementation("androidx.compose.ui:ui-test-manifest")
+<span class="caretline"><span class="lineno"> 68 </span>    androidTestImplementation(<span class="warning">platform("androidx.compose:compose-bom:2023.03.00")</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 69 </span>    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+<span class="lineno"> 70 </span>
+<span class="lineno"> 71 </span>    // Material Components (for XML theming bridge if needed, or other components)
 </pre>
 
-<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:66</span>: <span class="message">A newer version of androidx.test.espresso:espresso-core than 3.5.1 is available: 3.6.1</span><br /><pre class="errorlines">
-<span class="lineno"> 63 </span>    implementation("androidx.navigation:navigation-compose:2.7.7")
-<span class="lineno"> 64 </span>    testImplementation("junit:junit:4.13.2")
-<span class="lineno"> 65 </span>    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-<span class="caretline"><span class="lineno"> 66 </span>    androidTestImplementation("<span class="warning">androidx.test.espresso:espresso-core:3.5.1</span>")&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 67 </span>    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
-<span class="lineno"> 68 </span>    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-<span class="lineno"> 69 </span>    debugImplementation("androidx.compose.ui:ui-tooling")
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:72</span>: <span class="message">A newer version of com.google.android.material:material than 1.10.0 is available: 1.12.0</span><br /><pre class="errorlines">
+<span class="lineno"> 69 </span>    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+<span class="lineno"> 70 </span>
+<span class="lineno"> 71 </span>    // Material Components (for XML theming bridge if needed, or other components)
+<span class="caretline"><span class="lineno"> 72 </span>    implementation(<span class="warning">"com.google.android.material:material:1.10.0"</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 73 </span>
+<span class="lineno"> 74 </span>    // Navigation
+<span class="lineno"> 75 </span>    implementation("androidx.navigation:navigation-compose:2.7.7")
 </pre>
 
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:75</span>: <span class="message">A newer version of androidx.navigation:navigation-compose than 2.7.7 is available: 2.9.0</span><br /><pre class="errorlines">
+<span class="lineno"> 72 </span>    implementation("com.google.android.material:material:1.10.0")
+<span class="lineno"> 73 </span>
+<span class="lineno"> 74 </span>    // Navigation
+<span class="caretline"><span class="lineno"> 75 </span>    implementation(<span class="warning">"androidx.navigation:navigation-compose:2.7.7"</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 76 </span>
+<span class="lineno"> 77 </span>    // Testing
+<span class="lineno"> 78 </span>    testImplementation("junit:junit:4.13.2")
+</pre>
+
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:79</span>: <span class="message">A newer version of androidx.test.ext:junit than 1.1.5 is available: 1.2.1</span><br /><pre class="errorlines">
+<span class="lineno"> 76 </span>
+<span class="lineno"> 77 </span>    // Testing
+<span class="lineno"> 78 </span>    testImplementation("junit:junit:4.13.2")
+<span class="caretline"><span class="lineno"> 79 </span>    androidTestImplementation(<span class="warning">"androidx.test.ext:junit:1.1.5"</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 80 </span>    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+<span class="lineno"> 81 </span>} </pre>
+
+<span class="location"><a href="../../build.gradle.kts">../../build.gradle.kts</a>:80</span>: <span class="message">A newer version of androidx.test.espresso:espresso-core than 3.5.1 is available: 3.6.1</span><br /><pre class="errorlines">
+<span class="lineno"> 77 </span>    // Testing
+<span class="lineno"> 78 </span>    testImplementation("junit:junit:4.13.2")
+<span class="lineno"> 79 </span>    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+<span class="caretline"><span class="lineno"> 80 </span>    androidTestImplementation(<span class="warning">"androidx.test.espresso:espresso-core:3.5.1"</span>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 81 </span>} </pre>
+
+</div>
 </div>
 <div class="metadata"><div class="explanation" id="explanationGradleDependency" style="display: none;">
 This detector looks for usages of libraries where the version you are using is not the current stable release. Using older versions is fine, and there are cases where you deliberately want to stick with an older version. However, you may simply not be aware that a more recent version is available, and that is what this lint check helps find.<br/>Note: This issue has an associated quickfix operation in Android Studio and IntelliJ IDEA.<br>
@@ -442,7 +532,7 @@ only additional ones.)
 <div class="id">AutoboxingStateCreation<div class="issueSeparator"></div>
 </div>
 <div class="metadata"><div class="explanation">
-Calling <code>mutableStateOf&lt;T>()</code> when <code>T</code> is either backed by a primitive type on the JVM or is a value class results in a state implementation that requires all state values to be boxed. This usually causes an additional allocation for each state write, and adds some additional work to auto-unbox values when reading the value of the state. Instead, prefer to use a specialized primitive state implementation for <code>Int</code>, <code>Long</code>, <code>Float</code>, and <code>Double</code> when the state does not need to track null values and does not override the default <code>SnapshotMutationPolicy</code>.<br/><div class="vendor">
+Calling <code>mutableStateOf&lt;T>()</code> when <code>T</code> is either backed by a primitive type on the JVM or is a value class results in a state implementation that requires all state values to be boxed. This usually causes an additional allocation for each state write, and adds some additional work to auto-unbox values when reading the value of the state. Instead, prefer to use a specialized primitive state implementation for <code>Int</code>, <code>Long</code>, <code>Float</code>, and <code>Double</code> when the state does not need to track null values and does not override the default <code>SnapshotMutationPolicy</code>. See <code>mutableIntStateOf()</code>, <code>mutableLongStateOf()</code>, <code>mutableFloatStateOf()</code>, and <code>mutableDoubleStateOf()</code> for more information.<br/><div class="vendor">
 Vendor: Jetpack Compose<br/>
 Identifier: androidx.compose.runtime<br/>
 Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
@@ -455,7 +545,7 @@ Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">
 <div class="id">AutoboxingStateValueProperty<div class="issueSeparator"></div>
 </div>
 <div class="metadata"><div class="explanation">
-Avoid using the generic value accessor when using a State objects with a specialized types. Usages of the generic value property result in an unnecessary autoboxing operation whenever the state's value is read or written to. Use the specialized value accessor or property delegation to avoid unnecessary allocations.<br/><div class="vendor">
+Avoid using the generic <code>value</code> property when using a specialized State type. Reading or writing to the state's generic <code>value</code> property will result in an unnecessary autoboxing operation. Prefer the specialized value property (e.g. <code>intValue</code> for <code>MutableIntState</code>), or use property delegation to avoid unnecessary allocations.<br/><div class="vendor">
 Vendor: Jetpack Compose<br/>
 Identifier: androidx.compose.runtime<br/>
 Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
@@ -471,19 +561,6 @@ Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">
 Composable destinations should only be constructed directly within a NavGraphBuilder scope. Composable destinations cannot not be nested, and you should use the <code>navigation</code> function to create a nested graph instead.<br/><div class="vendor">
 Vendor: Jetpack Navigation Compose<br/>
 Identifier: androidx.navigation.compose<br/>
-</div>
-<br/>
-<br/></div>
-</div>
-</div>
-<div class="issue">
-<div class="id">ComposableModifierFactory<div class="issueSeparator"></div>
-</div>
-<div class="metadata"><div class="explanation">
-Modifier factory functions that need to be aware of the composition should use androidx.compose.ui.composed {} in their implementation instead of being marked as @Composable. This allows Modifiers to be referenced in top level variables and constructed outside of the composition.<br/><div class="vendor">
-Vendor: Jetpack Compose<br/>
-Identifier: androidx.compose.ui<br/>
-Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
 </div>
 <br/>
 <br/></div>
@@ -1002,6 +1079,19 @@ Identifier: androidx.navigation.compose<br/>
 </div>
 </div>
 <div class="issue">
+<div class="id">UnrememberedMutableInteractionSource<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+MutableInteractionSource instances created during composition need to be `remember`ed, otherwise they will be recreated during recomposition, and lose their state. Either hoist the MutableInteractionSource to an object that is not created during composition, or wrap the MutableInteractionSource in a call to <code>remember</code>.<br/><div class="vendor">
+Vendor: Jetpack Compose<br/>
+Identifier: androidx.compose.foundation<br/>
+Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
 <div class="id">UnrememberedMutableState<div class="issueSeparator"></div>
 </div>
 <div class="metadata"><div class="explanation">
@@ -1084,6 +1174,19 @@ as a comma-delimited list of opted-in annotations:<br/>
 Vendor: Android Open Source Project<br/>
 Identifier: androidx.annotation.experimental<br/>
 Feedback: <a href="https://issuetracker.google.com/issues/new?component=459778">https://issuetracker.google.com/issues/new?component=459778</a><br/>
+</div>
+<br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
+<div class="id">UnusedBoxWithConstraintsScope<div class="issueSeparator"></div>
+</div>
+<div class="metadata"><div class="explanation">
+The <code>content</code> lambda in BoxWithConstraints has a scope which will include the incoming constraints. If this scope is ignored, then the cost of subcomposition is being wasted and this BoxWithConstraints should be replaced with a Box.<br/><div class="vendor">
+Vendor: Jetpack Compose<br/>
+Identifier: androidx.compose.foundation<br/>
+Feedback: <a href="https://issuetracker.google.com/issues/new?component=612128">https://issuetracker.google.com/issues/new?component=612128</a><br/>
 </div>
 <br/>
 <br/></div>
@@ -1492,16 +1595,6 @@ There are predefined sizes (for each density) for launcher icons. You should fol
 </div>
 </div>
 <div class="issue">
-<div class="id">ImplicitSamInstance<div class="issueSeparator"></div>
-</div>
-<div class="metadata">Disabled By: Default<br/>
-<div class="explanation">
-Kotlin's support for SAM (single accessor method) interfaces lets you pass a lambda to the interface. This will create a new instance on the fly even though there is no explicit constructor call. If you pass one of these lambdas or method references into a method which (for example) stores or compares the object identity, unexpected results may happen.<br/>Note: This issue has an associated quickfix operation in Android Studio and IntelliJ IDEA.<br>
-<br/>
-<br/></div>
-</div>
-</div>
-<div class="issue">
 <div class="id">InvalidPackage<div class="issueSeparator"></div>
 </div>
 <div class="metadata">Disabled By: Default<br/>
@@ -1561,7 +1654,7 @@ To designate a unit test as the documentation example for an issue, name the tes
 </div>
 <div class="metadata">Disabled By: Default<br/>
 <div class="explanation">
-You should never compare two PSI elements for equality with <code>equals</code>; use <code>isEquivalentTo(PsiElement)</code> instead.<br/><br/>
+You should never compare two PSI elements for equality with <code>equals</code>; use <code>PsiEquivalenceUtil.areElementsEquivalent(PsiElement, PsiElement)</code> instead.<br/><br/>
 <br/></div>
 </div>
 </div>
@@ -1679,6 +1772,21 @@ Following this recommendation avoids naming collisions, and helps clearly identi
 </div>
 </div>
 <div class="issue">
+<div class="id">PrivacySandboxBlockedCall<div class="issueSeparator"></div>
+</div>
+<div class="metadata">Disabled By: Default<br/>
+<div class="explanation">
+Many APIs are unavailable in the Privacy Sandbox, depending on the <code>targetSdk</code>.<br/>
+<br/>
+If your code is designed to run in the sandbox (and never outside the sandbox) then you should remove the blocked calls to avoid exceptions at runtime.<br/>
+<br/>
+If your code is part of a library that can be executed both inside and outside the sandbox, surround the code with <code>if (!Process.isSdkSandbox()) { ... }</code> (or use your own field or method annotated with <code>@ChecksRestrictedEnvironment</code>) to avoid executing blocked calls when in the sandbox. Or, add the <code>@RestrictedForEnvironment</code> annotation to the containing method if the entire method should not be called when in the sandbox.<br/>
+<br/>
+This check is disabled by default, and should only be enabled in modules that may execute in the Privacy Sandbox.<br/><br/>
+<br/></div>
+</div>
+</div>
+<div class="issue">
 <div class="id">Registered<div class="issueSeparator"></div>
 </div>
 <div class="metadata">Disabled By: Default<br/>
@@ -1749,7 +1857,7 @@ A private inner class which is accessed from the outer class will force the comp
 </div>
 <div class="metadata">Disabled By: Default<br/>
 <div class="explanation">
-Straight single quotes and double quotes, when used as a pair, can be replaced by "curvy quotes" (or directional quotes). This can make the text more readable. Note that you should never use grave accents and apostrophes to quote, `like this'. (Also note that you should not use curvy quotes for code fragments.)<br/><div class="moreinfo">More info: <a href="https://en.wikipedia.org/wiki/Quotation_mark">https://en.wikipedia.org/wiki/Quotation_mark</a>
+Straight single quotes and double quotes, when used as a pair, can be replaced by "curvy quotes" (or directional quotes). Use the right single quotation mark for apostrophes. Never use generic quotes ", ' or free-standing accents `, ´ for quotation marks, apostrophes, or primes. This can make the text more readable.<br/><div class="moreinfo">More info: <a href="https://en.wikipedia.org/wiki/Quotation_mark">https://en.wikipedia.org/wiki/Quotation_mark</a>
 </div>Note: This issue has an associated quickfix operation in Android Studio and IntelliJ IDEA.<br>
 <br/>
 <br/></div>

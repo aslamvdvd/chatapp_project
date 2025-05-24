@@ -1,0 +1,157 @@
+commit bb6f9fccb51de3377e55165334f65767b89bd384
+Author: Mohammad Aslam <aslammohammad336@gmail.com>
+Date:   Sat May 24 11:22:36 2025 +0530
+
+    fix(bug): fixed some issues with the UI.
+
+commit 336694414a41ef77568fa0d9ec6bbf0085fcf4de
+Author: Mohammad Aslam <aslammohammad336@gmail.com>
+Date:   Sat May 24 09:17:59 2025 +0530
+
+    feat: Implement Authentication Options Screen and Navigation
+    
+    This commit introduces Phase 2 of the ChatApp development, focusing on user
+    authentication pathways, navigation between screens, and essential project
+    best practices.
+    
+    The primary addition is the "Authentication Options Screen," which is presented
+    to the user after they choose to "Sign Up" or "Log In" from the initial
+    Welcome Screen. This new screen provides multiple methods for authentication,
+    with "Continue with Email" being the first functional (placeholder) path.
+    
+    Key Features & Changes:
+    
+    *   **Authentication Options Screen (`AuthOptionsScreen.kt`):**
+        *   A new screen displaying buttons for "Continue with Email," "Continue
+            with Phone," "Continue with Gmail," and "Continue with Apple."
+        *   "Continue with Email" navigates to a placeholder email authentication screen.
+        *   Other authentication methods currently display a Snackbar indicating
+            they are TODO items.
+        *   Includes KDoc documentation and a Jetpack Compose `@Preview`.
+    
+    *   **Navigation Implementation (Jetpack Compose Navigation):**
+        *   Added `androidx.navigation:navigation-compose` dependency.
+        *   `MainActivity.kt` now hosts a `NavHost` within a `Scaffold` (to support Snackbars).
+        *   Defined navigation routes: "welcome," "auth_options," and "email_auth."
+        *   `WelcomeScreen.kt` buttons now navigate to the "auth_options" route.
+    
+    *   **Animated Screen Transitions:**
+        *   The platform name ("GhostTalk") and slogan ("Private. Secure. Modern.")
+            on the `WelcomeScreen` now animate out (slide up/fade) when navigating
+            to the `AuthOptionsScreen` and animate back in when returning.
+        *   This is achieved using `AnimatedVisibility` in `MainActivity.kt`'s
+            `ChatAppNavigation` composable, which conditionally displays these elements
+            based on the current navigation route.
+        *   `WelcomeScreen.kt` was modified to conditionally render its own title/slogan
+            to support this shared animation scheme.
+    
+    *   **Project Hygiene & Best Practices:**
+        *   **`.gitignore`:** Added a comprehensive `.gitignore` file tailored for
+            Android, Kotlin, Gradle, and common IDE/system files.
+        *   **`README.md`:** Created a detailed `README.md` including:
+            *   Project name ("ChatApp by aarchangel") and overview.
+            *   Technologies used.
+            *   Build instructions.
+            *   Explanation of the project structure.
+            *   A section for the future roadmap.
+        *   **`LICENSE`:** Added an MIT License file.
+        *   **`CODE_OF_CONDUCT.md`:** Included the Contributor Covenant Code of Conduct.
+        *   **`CONTRIBUTING.md`:** Provided basic guidelines for contributing to the project.
+        *   **KDoc Documentation:** Added extensive KDoc comments to all new and
+            significantly modified Composables, functions, classes (including
+            `MainActivity.kt`, `WelcomeScreen.kt`, `AuthOptionsScreen.kt`, `AppConfig.kt`,
+            and all files in `ui/theme/`).
+        *   **Previews:** Ensured `@Preview` annotations are present for all major screens
+            (`WelcomeScreen`, `AuthOptionsScreen`, `MainActivity`'s navigation).
+    
+    *   **Code & Conventions:**
+        *   Adhered to universal Kotlin coding conventions.
+        *   Maintained separation of concerns where appropriate for current complexity.
+        *   Ensured file naming and directory structure align with specified conventions
+            (e.g., `ui/screens/`).
+    
+    This phase significantly enhances the application's groundwork by establishing
+    navigation, adding a key step in the user authentication flow, and incorporating
+    crucial documentation and best-practice files for future development and
+    collaboration.
+
+commit dc4404dbbc364c73f0569964779cf01e9976f776
+Author: Mohammad Aslam <aslammohammad336@gmail.com>
+Date:   Fri May 23 21:56:39 2025 +0530
+
+    feat: Implement initial project structure and Welcome Screen for ChatApp
+    
+    This commit establishes the foundational structure for the ChatApp Android application,
+    built with Jetpack Compose. It introduces the primary welcome screen, core
+    configuration, and necessary theming elements, alongside a comprehensive project
+    setup.
+    
+    The project, internally identified as "ChatApp by aarchangel," currently
+    presents itself to the user as "GhostTalk" (this display name is configurable
+    and can be updated in the future without altering the core codebase identifiers).
+    
+    Key features and changes in this commit:
+    
+    *   **Project Initialization:**
+        *   Configured root and app-level `build.gradle.kts` files with necessary
+            Android, Kotlin, and Jetpack Compose dependencies.
+        *   Set up `settings.gradle.kts` and `gradle.properties` for project
+            configuration, including AndroidX and Jetifier support.
+        *   Generated and configured the Gradle wrapper (`gradlew`).
+        *   Created a basic `AndroidManifest.xml` with necessary permissions,
+            application definition, and MainActivity declaration.
+        *   Added essential Android resources: `strings.xml` for app name,
+            `themes.xml` for the base XML theme, placeholder icons, and
+            data/backup extraction rules.
+    
+    *   **Core Configuration (`AppConfig.kt`):**
+        *   Created `AppConfig.kt` under `com.aarchangel.chatapp.config` to hold
+            centralized application constants.
+        *   Defined `PLATFORM_NAME` (currently "GhostTalk"), chat type names,
+            default theme, and guest mode status.
+        *   Includes an author comment "ChatApp by aarchangel".
+    
+    *   **Welcome Screen (`WelcomeScreen.kt`):**
+        *   Developed `WelcomeScreen.kt` using Jetpack Compose under
+            `com.aarchangel.chatapp.ui.screens`.
+        *   Features a full-screen dark background.
+        *   Displays a centered large title (from `AppConfig.PLATFORM_NAME`),
+            a subtitle ("Private. Secure. Modern."), and two prominent buttons:
+            "Sign Up" and "Log In".
+        *   Styled with Material 3 components, rounded corners, elevation,
+            and proper spacing.
+        *   Includes TODOs for navigation in button `onClick` handlers.
+        *   Accompanied by a `@Preview` function for UI development.
+    
+    *   **Theming (`com.aarchangel.chatapp.ui.theme`):**
+        *   Created `ChatAppTheme.kt` (renamed from GhostTalkTheme) providing a
+            Jetpack Compose theme, supporting dynamic colors on Android 12+.
+        *   Defined `Color.kt` with default color palettes (Purple80, Pink40, etc.).
+        *   Established `Type.kt` with basic typography settings.
+        *   All theme files include the "ChatApp by aarchangel" author comment.
+    
+    *   **Main Activity (`MainActivity.kt`):**
+        *   Created `MainActivity.kt` under `com.aarchangel.chatapp` as the
+            entry point of the application.
+        *   Sets its content to the `WelcomeScreen` composable, wrapped in
+            `ChatAppTheme`.
+        *   Includes an author comment "ChatApp by aarchangel".
+    
+    *   **Refactoring and Naming Convention:**
+        *   The project's base package name and `applicationId`/`namespace` have been
+            set to `com.aarchangel.chatapp`.
+        *   Internal Kotlin class names (e.g., `ChatAppTheme`) and comments reflect
+            "ChatApp by aarchangel".
+        *   User-facing names (like the app name in the launcher and the title on
+            the welcome screen) currently use "GhostTalk" as defined in `AppConfig.kt`
+            and `strings.xml`, allowing for future changes to the display name
+            without altering the underlying codebase structure.
+    
+    This initial setup provides a solid foundation for further development of the
+    ChatApp, focusing on a clean, modern, and privacy-first approach.
+
+commit 66f1cb3249f7652f7a8cd7b72c3cac5bae97f491
+Author: Mohammad Aslam <aslammohammad336@gmail.com>
+Date:   Fri May 23 20:48:36 2025 +0530
+
+    Initial Commit.

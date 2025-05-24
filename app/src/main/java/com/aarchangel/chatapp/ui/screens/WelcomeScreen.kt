@@ -13,6 +13,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
+import com.aarchangel.chatapp.ui.theme.Dimens
+import com.aarchangel.chatapp.viewmodel.WelcomeViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aarchangel.chatapp.ui.components.AppButton
 
 /**
  * The Welcome Screen for the ChatApp.
@@ -21,9 +25,13 @@ import com.aarchangel.chatapp.ui.theme.ChatAppTheme
  * // ChatApp by aarchangel
  *
  * @param navController The NavController used for navigating to other screens.
+ * @param welcomeViewModel The ViewModel for this screen.
  */
 @Composable
-fun WelcomeScreen(navController: NavController) {
+fun WelcomeScreen(
+    // navController: NavController, // Navigation is now handled by ViewModel
+    welcomeViewModel: WelcomeViewModel = viewModel()
+) {
     ChatAppTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -31,31 +39,20 @@ fun WelcomeScreen(navController: NavController) {
         ) {
             Column(
                 modifier = Modifier
-                    .padding(16.dp),
+                    .padding(Dimens.PaddingMedium),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Button(
-                    onClick = { navController.navigate("auth_options/signup") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                ) {
-                    Text(text = "Sign Up")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { navController.navigate("auth_options/login") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                ) {
-                    Text(text = "Log In")
-                }
+                AppButton(
+                    text = "Sign Up",
+                    onClick = { welcomeViewModel.onSignUpClicked() }
+                    // Modifier and other properties will use AppButton defaults
+                )
+                Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+                AppButton(
+                    text = "Log In",
+                    onClick = { welcomeViewModel.onLoginClicked() }
+                )
             }
         }
     }
@@ -70,6 +67,14 @@ fun WelcomeScreen(navController: NavController) {
 @Composable
 fun WelcomeScreenPreview() {
     ChatAppTheme {
-        WelcomeScreen(navController = rememberNavController())
+        WelcomeScreen(welcomeViewModel = WelcomeViewModel())
+    }
+}
+
+@Preview(showBackground = true, name = "Welcome Screen Buttons - Dark", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun WelcomeScreenPreviewDark() {
+    ChatAppTheme {
+        WelcomeScreen(welcomeViewModel = WelcomeViewModel())
     }
 } 
