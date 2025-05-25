@@ -41,7 +41,7 @@ sealed class AppScreen(val route: String) {
 
     /**
      * Represents the Password Entry screen for authentication.
-     * Takes `email` and `flowType` arguments.
+     * Takes `flowType` and `email` arguments.
      */
     object PasswordEntry : AppScreen("password_entry/{flowType}/{email}") {
         fun createRoute(flowType: String, email: String) = "password_entry/$flowType/$email"
@@ -54,10 +54,10 @@ sealed class AppScreen(val route: String) {
 
     /**
      * Represents the screen for entering additional user details during signup.
-     * Takes `email` and `flowType` arguments.
+     * Takes `flowType` argument. Email will be entered on this screen.
      */
-    object CreateAccountDetails : AppScreen("create_account_details/{flowType}/{email}") {
-        fun createRoute(flowType: String, email: String) = "create_account_details/$flowType/$email"
+    object CreateAccountDetails : AppScreen("create_account_details/{flowType}") {
+        fun createRoute(flowType: String) = "create_account_details/$flowType"
     }
 
     // Add other screens here as the app grows

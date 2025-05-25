@@ -4,20 +4,28 @@ package com.aarchangel.chatapp.ui.screens.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aarchangel.chatapp.ui.components.AppButton
@@ -25,6 +33,7 @@ import com.aarchangel.chatapp.ui.components.AppTextField
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.ui.theme.Dimens
 import com.aarchangel.chatapp.viewmodel.EmailAuthViewModel
+import android.util.Log
 
 /**
  * Screen for entering additional user details during the signup flow.
@@ -42,11 +51,13 @@ fun CreateAccountDetailsScreen(
     val uiState by emailAuthViewModel.uiState.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
     val scrollState = rememberScrollState()
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tell Us More About You") },
+                title = { Text("Create Account") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -65,10 +76,27 @@ fun CreateAccountDetailsScreen(
             verticalArrangement = Arrangement.spacedBy(Dimens.PaddingMedium)
         ) {
             Text(
-                text = "Account Details for ${uiState.email}", // Display email for context
+                text = "Account Details",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = Dimens.PaddingSmall)
             )
+
+
+            AppTextField(
+                value = uiState.email,
+                onValueChange = { emailAuthViewModel.onEmailChanged(it) },
+                label = "Email",
+                placeholder = "Enter your email address",
+                isError = uiState.emailError != null,
+                errorMessage = uiState.emailError,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                singleLine = true
+            )
+
+           
 
             // Username
             AppTextField(
@@ -140,10 +168,62 @@ fun CreateAccountDetailsScreen(
                 singleLine = true
             )
 
+            // Password
+            AppTextField(
+                value = uiState.password,
+                onValueChange = { emailAuthViewModel.onPasswordChanged(it) },
+                label = "Password",
+                placeholder = "Enter your password",
+                isError = uiState.passwordError != null,
+                errorMessage = uiState.passwordError,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Next
+                ),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    val image = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
+                    val description = if (passwordVisible) "Hide password" else "Show password"
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(imageVector = image, description)
+                    }
+                },
+                singleLine = true
+            )
+
+            // Confirm Password
+            AppTextField(
+                value = uiState.confirmPassword,
+                onValueChange = { emailAuthViewModel.onConfirmPasswordChanged(it) },
+                label = "Confirm Password",
+                placeholder = "Re-enter your password",
+                isError = uiState.confirmPasswordError != null,
+                errorMessage = uiState.confirmPasswordError,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        keyboardController?.hide()
+                        emailAuthViewModel.onCreateAccountDetailsContinue() // Existing action
+                    }
+                ),
+                visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    val image = if (confirmPasswordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
+                    val description = if (confirmPasswordVisible) "Hide password" else "Show password"
+                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                        Icon(imageVector = image, description)
+                    }
+                },
+                singleLine = true
+            )
+
             Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
 
             AppButton(
-                text = "Continue",
+                text = "Sign Up",
                 onClick = {
                     keyboardController?.hide()
                     emailAuthViewModel.onCreateAccountDetailsContinue()

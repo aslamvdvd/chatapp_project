@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import android.util.Log
 
 /**
  * Data class to hold the UI state for email/password authentication.
@@ -62,14 +63,15 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
 
     init {
         val flowTypeFromNav: String? = savedStateHandle["flowType"]
-        val emailFromNav: String? = savedStateHandle["email"] // Will be present when coming to PasswordEntryScreen
-        // Or if we decide to pass it to CreateAccountDetailsScreen too
+        Log.d("EmailAuthViewModel", "Attempting to init. flowTypeFromNav from SavedStateHandle: '$flowTypeFromNav'")
+        Log.d("EmailAuthViewModel", "Current uiState.flowType before update: '${_uiState.value.flowType}'")
+
         _uiState.update {
             it.copy(
-                flowType = flowTypeFromNav ?: it.flowType, // Keep existing if not from nav (e.g. direct Login screen)
-                email = emailFromNav ?: it.email
+                flowType = flowTypeFromNav ?: it.flowType
             )
         }
+        Log.d("EmailAuthViewModel", "Updated uiState.flowType after update: '${_uiState.value.flowType}'")
     }
 
     /** Updates the email in the UI state. */
@@ -97,29 +99,8 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
         return password.length >= 6
     }
 
-    /** Called when the "Continue" button is clicked on the EmailEntryScreen. */
-    fun onEmailContinue() {
-        val currentFlowType = _uiState.value.flowType
-        val email = _uiState.value.email
-
-        if (!isEmailValid(email)) {
-            _uiState.update { it.copy(emailError = "Invalid email format") }
-            return
-        }
-
-        viewModelScope.launch {
-            if (currentFlowType == "signup") {
-                _navigationEvent.emit(AppScreen.CreateAccountDetails.createRoute(email, currentFlowType))
-            } else { // Should not happen if onEmailContinue is only for signup from EmailEntry
-                // This case needs to be re-evaluated. Original was direct to PasswordEntry.
-                // For now, let's assume EmailEntryScreen using this method is always part of signup for this new flow.
-                // Or, if Login flow also uses EmailEntry first, then it would go to PasswordEntry or a combined Login screen.
-                // Given new requirements, Login flow will have its own dedicated LoginScreen.
-                // So, EmailEntryScreen is now primarily for the first step of SIGNUP.
-                _snackbarMessage.emit("Error: Unexpected flow type in onEmailContinue")
-            }
-        }
-    }
+    // onEmailContinue() is removed as EmailEntryScreen is being removed.
+    // Navigation goes directly to CreateAccountDetailsScreen from AuthOptions for signup.
 
     // --- New methods for signup details ---
     fun onUsernameChanged(username: String) {
@@ -150,6 +131,14 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
     fun onCreateAccountDetailsContinue() {
         val state = _uiState.value
         var isValid = true
+
+        // Validate Email
+        if (!isEmailValid(state.email)) {
+            _uiState.update { it.copy(emailError = "Invalid email format") }
+            isValid = false
+        }
+
+        // Validate existing details
         if (state.username.isBlank()) {
             _uiState.update { it.copy(usernameError = "Username cannot be empty") }
             isValid = false
@@ -166,29 +155,14 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
             _uiState.update { it.copy(dateOfBirthError = "Date of birth cannot be empty") }
             isValid = false
         }
-        if (state.gender.isBlank()) {
-            _uiState.update { it.copy(genderError = "Gender cannot be empty") }
-            isValid = false
-        }
+        // Gender validation is currently commented out as optional
 
-        if (!isValid) return
-
-        viewModelScope.launch {
-            _navigationEvent.emit(AppScreen.PasswordEntry.createRoute(state.flowType, state.email))
-        }
-    }
-
-    /** Called when the final submit button is clicked on the PasswordEntryScreen (for signup). */
-    fun onSubmitCredentials() {
-        val state = _uiState.value
-        var isValid = true
-
+        // Add password validation (since password fields will be on this screen)
         if (!isPasswordValid(state.password)) {
             _uiState.update { it.copy(passwordError = "Password must be at least 6 characters") }
             isValid = false
         }
-
-        if (state.flowType == "signup" && state.password != state.confirmPassword) {
+        if (state.password != state.confirmPassword) {
             _uiState.update { it.copy(confirmPasswordError = "Passwords do not match") }
             isValid = false
         }
@@ -196,17 +170,55 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
         if (!isValid) return
 
         _uiState.update { it.copy(isLoading = true) }
-        // Placeholder for actual authentication logic
+        // Placeholder for actual account creation logic using all details including password
         viewModelScope.launch {
-            kotlinx.coroutines.delay(1500) // Simulate network request
+            kotlinx.coroutines.delay(2000) // Simulate network request
             _uiState.update { it.copy(isLoading = false) }
-            if (state.email == "test@example.com" && state.password == "password") { // Mock success
-                _snackbarMessage.emit("${state.flowType.capitalize()} successful for ${state.email}")
+
+            if (isValid && state.username.isNotBlank() && state.email.isNotBlank() && state.password.isNotBlank()) { // check isValid flag too
+                _snackbarMessage.emit("Account created successfully for ${state.email} with username ${state.username}!")
                 // TODO: Navigate to a Home/Main screen upon successful auth
                 // _navigationEvent.emit(AppScreen.HomeScreen.route) // Example
             } else {
-                _snackbarMessage.emit("Authentication failed. Please try again.")
-                _uiState.update { it.copy(passwordError = "Invalid credentials") } // Generic error on password for failed login
+                _snackbarMessage.emit("Account creation failed. Please check details and try again.")
+            }
+        }
+    }
+
+    /** Called when the final submit button is clicked on the PasswordEntryScreen. */
+    fun onSubmitCredentials() {
+        val state = _uiState.value
+        var isValid = true
+
+        // This method is now only relevant if PasswordEntryScreen is used for a login flow.
+        // For signup, CreateAccountDetailsScreen and its continue method are used.
+
+        if (!isPasswordValid(state.password)) {
+            _uiState.update { it.copy(passwordError = "Password must be at least 6 characters") }
+            isValid = false
+        }
+
+        if (!isValid) return
+
+        _uiState.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(1500) // Simulate network request
+            _uiState.update { it.copy(isLoading = false) }
+
+            // This path is now primarily for a login attempt via a dedicated PasswordEntryScreen (if used)
+            if (state.flowType == "login") {
+                if (state.email == "test@example.com" && state.password == "password") { // Mock success
+                    _snackbarMessage.emit("Login successful for ${state.email}")
+                    // TODO: Navigate to a Home/Main screen upon successful auth
+                    // _navigationEvent.emit(AppScreen.HomeScreen.route) // Example
+                } else {
+                    _snackbarMessage.emit("Authentication failed. Please try again.")
+                    _uiState.update { it.copy(passwordError = "Invalid credentials") }
+                }
+            } else if (state.flowType == "signup") {
+                // This path in onSubmitCredentials for signup is now deprecated by the new flow.
+                // CreateAccountDetailsScreen handles the final step of signup.
+                _snackbarMessage.emit("Info: Signup via this (old password entry) path is deprecated.")
             }
         }
     }

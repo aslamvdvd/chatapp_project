@@ -37,8 +37,6 @@ import com.aarchangel.chatapp.navigation.AppScreen
 import com.aarchangel.chatapp.ui.components.SharedAppHeader
 import com.aarchangel.chatapp.ui.screens.AuthOptionsScreen
 import com.aarchangel.chatapp.ui.screens.WelcomeScreen
-import com.aarchangel.chatapp.ui.screens.auth.EmailEntryScreen
-import com.aarchangel.chatapp.ui.screens.auth.PasswordEntryScreen
 import com.aarchangel.chatapp.ui.screens.auth.CreateAccountDetailsScreen
 import com.aarchangel.chatapp.ui.screens.auth.LoginScreen
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
@@ -180,39 +178,41 @@ fun ChatAppNavigation(
             )
         }
 
-        composable(
-            route = AppScreen.EmailEntry.route,
-            arguments = listOf(navArgument("flowType") { type = NavType.StringType })
-        ) { backStackEntry ->
-            // EmailAuthViewModel is scoped to this NavBackStackEntry by default with viewModel()
-            // and automatically receives SavedStateHandle with "flowType".
-            EmailEntryScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
+        // EmailEntryScreen is no longer used in the primary signup flow.
+        // composable(
+        //     route = AppScreen.EmailEntry.route,
+        //     arguments = listOf(navArgument("flowType") { type = NavType.StringType })
+        // ) { backStackEntry ->
+        //     EmailEntryScreen(
+        //         emailAuthViewModel = emailAuthViewModel,
+        //         onNavigateBack = { navController.popBackStack() }
+        //     )
+        // }
 
-        composable(
-            route = AppScreen.PasswordEntry.route,
-            arguments = listOf(
-                navArgument("flowType") { type = NavType.StringType },
-                navArgument("email") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            // EmailAuthViewModel is scoped here as well and receives arguments.
-            PasswordEntryScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
+        // PasswordEntryScreen is no longer used in the primary signup flow.
+        // It might be used for a "login with password" flow if LoginScreen is not comprehensive enough,
+        // or for a "change password" feature later.
+        // composable(
+        //     route = AppScreen.PasswordEntry.route,
+        //     arguments = listOf(
+        //         navArgument("flowType") { type = NavType.StringType },
+        //         navArgument("email") { type = NavType.StringType }
+        //     )
+        // ) { backStackEntry ->
+        //     PasswordEntryScreen(
+        //         emailAuthViewModel = emailAuthViewModel,
+        //         onNavigateBack = { navController.popBackStack() }
+        //     )
+        // }
 
         composable(
             route = AppScreen.CreateAccountDetails.route,
             arguments = listOf(
-                navArgument("flowType") { type = NavType.StringType },
-                navArgument("email") { type = NavType.StringType }
+                navArgument("flowType") { type = NavType.StringType } // Only flowType now
             )
         ) { backStackEntry ->
-            // EmailAuthViewModel gets flowType and email from SavedStateHandle
             CreateAccountDetailsScreen(
+                emailAuthViewModel = emailAuthViewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
