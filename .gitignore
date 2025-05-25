@@ -6,18 +6,36 @@
 .project
 .classpath
 .factorypath
+# Common build output & temp files
 build/
-local.properties
 *.DS_Store
 
-# Gradle files
-.gradle/
-gradle/
-gradlew
-gradlew.bat
+# Environment files
+.env
+*.env
+.env.*
+!.env.example
+!.env.template
+
+# Android App specific (moved from root, now prefixed)
+/android-app/build/
+/android-app/.gradle/
+/android-app/local.properties # Already in android-app but good to be explicit at root too
+# /android-app/gradle/ # Usually committed
+# /android-app/gradlew # Usually committed
+# /android-app/gradlew.bat # Usually committed
+
+# Rust backend specific
+/backend/target/
+
+# Gradle files (general, might be less relevant at root now)
+# .gradle/ # Covered by /android-app/.gradle/
+# gradlew # Moved to android-app
+# gradlew.bat # Moved to android-app
 *.jar
 *~
-# Built application files
+
+# Built application files (Android)
 *.apk
 *.ap_
 *.aab
@@ -31,23 +49,26 @@ gradlew.bat
 *.jks
 *.keystore
 
-# Google services
-google-services.json
+# Google services (Android)
+/android-app/google-services.json
 
 # Local configuration (sensitive information)
 secrets.properties
 
-# NDK files
-obj/
-libs/
-# Support for Flutter modules
+# NDK files (Android)
+/android-app/obj/
+/android-app/libs/
+
+# Support for Flutter modules (if ever used)
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 .metadata
-# Intellij
+
+# Intellij (already present, kept for completeness)
 misc.xml
 modules.xml
 workspace.xml
+
 # VS Code
 .vscode/ 
