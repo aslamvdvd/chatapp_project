@@ -1,0 +1,16 @@
+# Rust specific
+/target
+Cargo.lock
+
+# Environment files
+.env
+
+# Log files
+logs/
+
+# IDE specific
+.idea/
+.vscode/
+
+# OS specific
+.DS_Store 

@@ -1,5 +1,5 @@
 [package]
-name = "backend"
+name = "chatapp_by_aarchangel_backend"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,20 +9,23 @@ edition = "2021"
 actix-web = "4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_derive = "1.0" # Though serde derive is usually covered by the "derive" feature of serde
-dotenvy = "0.15"
-log = "0.4"
-env_logger = "0.10"
-
-# For password hashing
-argon2 = "0.5"
-rand = "0.8"
-
-# For email regex & validation (optional but useful)
+tokio = { version = "1", features = ["full"] }
 validator = { version = "0.16", features = ["derive"] }
-
-# For time handling (e.g., dob)
-chrono = { version = "0.4", features = ["serde"] }
-
-# For working with UUIDs
+argon2 = "0.5"
+rand = "0.8" # For generating salt
 uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-native-tls", "uuid", "chrono", "macros"] }
+dotenvy = "0.15"
+thiserror = "1.0" # Added for custom error handling
+utoipa = { version = "4.0", features = ["actix_extras", "chrono", "uuid"] } # Updated version and features
+utoipa-swagger-ui = { version = "4.0", features = ["actix-web"] } # Corrected feature name
+
+# Logging dependencies
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "registry", "env-filter", "fmt"] }
+tracing-appender = "0.2"
+tracing-actix-web = "0.7" # Added for Actix Web integration
+
+# For password hashing, argon2 needs a random number generator for salt
+# rand_core = { version = "0.6", features = ["std"] } # argon2 pulls this in via rand
