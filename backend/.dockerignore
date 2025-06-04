@@ -1,0 +1,35 @@
+target
+.env
+.git
+logs
+
+# Ignore OS-specific files
+.DS_Store
+*.swp
+*.swo
+
+# Ignore IDE-specific files
+.idea/
+.vscode/
+
+# Backend specific cache/build artifacts if any beyond target/
+# e.g. if you had a frontend within the backend build process
+# frontend/dist
+# frontend/node_modules
+
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.iml
+*.ipr
+*.iws
+*.project
+*.classpath
+*.settings 

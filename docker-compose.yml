@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: ghosttalk_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ghosttalk_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - ./backend:/usr/src/app 
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      RUST_LOG: "actix_web=info,info"
+      # For development with cargo-watch, ensure cargo-watch is in your Docker image's PATH
+      # and uncomment the following. You might need a custom Dockerfile stage for dev.
+    # command: ["cargo", "watch", "-q", "-c", "-w", "./src", "-x", "run", "--", "--host", "0.0.0.0"]
+    restart: unless-stopped
+    labels:
+      - "com.ghosttalk.description=GhostTalk Backend API"
+      - "com.ghosttalk.version=0.1.0"
+
+volumes:
+  pgdata:
+    driver: local 

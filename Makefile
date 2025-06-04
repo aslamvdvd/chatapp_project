@@ -1,0 +1,85 @@
+.PHONY: all up down logs backend-logs db-logs ps clean prune db-shell migrate-setup migrate-container help
+
+# Default target
+all: up
+
+## Docker Compose commands
+up:
+	@echo "Starting up services with Docker Compose (detached mode)..."
+	docker compose up --build -d
+
+down:
+	@echo "Stopping and removing containers, networks, and volumes..."
+	docker compose down -v --remove-orphans
+
+logs:
+	@echo "Following logs for all services..."
+	docker compose logs -f
+
+backend-logs:
+	@echo "Following logs for backend service..."
+	docker compose logs -f backend
+
+db-logs:
+	@echo "Following logs for db service..."
+	docker compose logs -f db
+
+ps:
+	@echo "Listing running services..."
+	docker compose ps
+
+## Docker System Prune
+clean: down
+	@echo "Cleaning up Docker system (unused images, networks, etc.)..."
+	docker system prune -af
+
+prune: # More aggressive, includes unused volumes defined in compose but not named volumes unless specified
+	@echo "WARNING: This will remove all stopped containers, all unused networks, all dangling images, and all build cache."
+	@echo "Stopping and removing containers and potentially anonymous volumes..."
+	docker compose down -v --remove-orphans
+	@echo "Pruning Docker system (including build cache)..."
+	docker system prune --all --force --volumes
+
+## Database specific commands
+db-shell:
+	@echo "Connecting to PostgreSQL shell in the db container (using .env for credentials)..."
+	docker compose exec db psql -U $$(grep POSTGRES_USER .env | cut -d '=' -f2) -d $$(grep POSTGRES_DB .env | cut -d '=' -f2)
+
+# --- SQLx Migrations --- 
+# Uncomment and adapt if you use sqlx-cli.
+# Ensure sqlx-cli is installed where you run these commands (locally or in-container).
+
+# Example: To run migrations using sqlx-cli installed LOCALLY:
+# Ensure your .env has DATABASE_URL pointing to localhost:5432 (the exposed port).
+# migrate-setup-local:
+# 	@echo "(Local sqlx-cli) Creating database (if not exists) and running migrations..."
+# 	DATABASE_URL=$$(grep DATABASE_URL .env | sed 's/@db/@localhost/' | cut -d '=' -f2) sqlx database create || true
+# 	DATABASE_URL=$$(grep DATABASE_URL .env | sed 's/@db/@localhost/' | cut -d '=' -f2) sqlx migrate run
+
+# Example: To run migrations using sqlx-cli INSIDE THE BACKEND CONTAINER:
+# (Assumes sqlx-cli is installed in the backend Docker image)
+# migrate-run-container:
+# 	@echo "(Container sqlx-cli) Running migrations inside the backend container..."
+# 	docker compose exec backend sqlx migrate run --source ./migrations # Adjust --source path if needed
+
+## Help
+help:
+	@echo "Available commands:"
+	@echo "  make all              - Default: Start services (same as make up)"
+	@echo "  make up               - Start services (detached mode, builds if necessary)"
+	@echo "  make down             - Stop and remove containers, networks, and volumes (including named volumes like pgdata)"
+	@echo "  make logs             - Follow logs for all services"
+	@echo "  make backend-logs     - Follow logs for the backend service"
+	@echo "  make db-logs          - Follow logs for the db service"
+	@echo "  make ps               - List running services"
+	@echo "  make db-shell         - Connect to PostgreSQL shell in the db container (reads .env for user/db)"
+	@echo "  make clean            - Stop services and prune unused Docker objects (images, networks, build cache)"
+	@echo "  make prune            - Aggressively stop services and prune Docker objects (includes unused volumes)"
+	@echo ""
+	@echo "SQLx Migration Examples (uncomment and adapt in Makefile if using sqlx-cli):"
+	@echo "  make migrate-setup-local    - Run migrations using local sqlx-cli against exposed DB port."
+	@echo "                              (Requires .env with DATABASE_URL like postgres://user:pass@localhost:5432/dbname)"
+	@echo "  make migrate-run-container  - Run migrations using sqlx-cli from within the backend container."
+	@echo "                              (Requires sqlx-cli in backend image and migrations folder copied)."
+	@echo ""
+	@echo "Important: Remember to create and populate your .env file from .env.template." 
