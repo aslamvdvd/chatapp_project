@@ -37,7 +37,7 @@ import com.aarchangel.chatapp.navigation.AppScreen
 import com.aarchangel.chatapp.ui.components.SharedAppHeader
 import com.aarchangel.chatapp.ui.screens.AuthOptionsScreen
 import com.aarchangel.chatapp.ui.screens.WelcomeScreen
-import com.aarchangel.chatapp.ui.screens.auth.CreateAccountDetailsScreen
+import com.aarchangel.chatapp.ui.screens.auth.EmailSignUpScreen
 import com.aarchangel.chatapp.ui.screens.auth.LoginScreen
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.ui.theme.Dimens
@@ -178,42 +178,17 @@ fun ChatAppNavigation(
             )
         }
 
-        // EmailEntryScreen is no longer used in the primary signup flow.
-        // composable(
-        //     route = AppScreen.EmailEntry.route,
-        //     arguments = listOf(navArgument("flowType") { type = NavType.StringType })
-        // ) { backStackEntry ->
-        //     EmailEntryScreen(
-        //         emailAuthViewModel = emailAuthViewModel,
-        //         onNavigateBack = { navController.popBackStack() }
-        //     )
-        // }
-
-        // PasswordEntryScreen is no longer used in the primary signup flow.
-        // It might be used for a "login with password" flow if LoginScreen is not comprehensive enough,
-        // or for a "change password" feature later.
-        // composable(
-        //     route = AppScreen.PasswordEntry.route,
-        //     arguments = listOf(
-        //         navArgument("flowType") { type = NavType.StringType },
-        //         navArgument("email") { type = NavType.StringType }
-        //     )
-        // ) { backStackEntry ->
-        //     PasswordEntryScreen(
-        //         emailAuthViewModel = emailAuthViewModel,
-        //         onNavigateBack = { navController.popBackStack() }
-        //     )
-        // }
-
         composable(
-            route = AppScreen.CreateAccountDetails.route,
+            route = AppScreen.EmailSignUpScreen.route,
             arguments = listOf(
-                navArgument("flowType") { type = NavType.StringType } // Only flowType now
+                navArgument("flowType") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            CreateAccountDetailsScreen(
+            val flowType = backStackEntry.arguments?.getString("flowType") ?: "signup"
+            EmailSignUpScreen(
                 emailAuthViewModel = emailAuthViewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                flowType = flowType
             )
         }
 

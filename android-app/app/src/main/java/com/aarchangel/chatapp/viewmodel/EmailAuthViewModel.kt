@@ -14,6 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import android.util.Log
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.Date
 
 /**
  * Data class to hold the UI state for email/password authentication.
@@ -46,7 +50,7 @@ data class EmailAuthUiState(
 )
 
 /**
- * ViewModel for handling email and password authentication (both signup and login).
+ * ViewModel for handling email and password authentication (primarily signup now).
  * Manages UI state, validation, and navigation events for these flows.
  * // ChatApp by aarchangel
  */
@@ -61,17 +65,47 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
     private val _snackbarMessage = MutableSharedFlow<String>()
     val snackbarMessage = _snackbarMessage.asSharedFlow()
 
+    private val dateFormatter = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+
     init {
         val flowTypeFromNav: String? = savedStateHandle["flowType"]
-        Log.d("EmailAuthViewModel", "Attempting to init. flowTypeFromNav from SavedStateHandle: '$flowTypeFromNav'")
-        Log.d("EmailAuthViewModel", "Current uiState.flowType before update: '${_uiState.value.flowType}'")
+        val emailFromNav: String? = savedStateHandle["email"] // For pre-filling if coming from a different flow later
+
+        Log.d("EmailAuthViewModel", "Init - flowTypeFromNav: '$flowTypeFromNav', emailFromNav: '$emailFromNav'")
 
         _uiState.update {
             it.copy(
-                flowType = flowTypeFromNav ?: it.flowType
+                flowType = flowTypeFromNav ?: it.flowType,
+                email = emailFromNav ?: it.email // Pre-fill email if provided
             )
         }
-        Log.d("EmailAuthViewModel", "Updated uiState.flowType after update: '${_uiState.value.flowType}'")
+        Log.d("EmailAuthViewModel", "Updated uiState - flowType: '${_uiState.value.flowType}', email: '${_uiState.value.email}'")
+    }
+
+    /** Clears all fields and errors related to the sign-up form. */
+    fun clearSignUpForm() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                email = "",
+                password = "",
+                confirmPassword = "",
+                username = "",
+                firstName = "",
+                middleName = "",
+                lastName = "",
+                dateOfBirth = "",
+                gender = "",
+                emailError = null,
+                passwordError = null,
+                confirmPasswordError = null,
+                usernameError = null,
+                firstNameError = null,
+                lastNameError = null,
+                dateOfBirthError = null,
+                genderError = null,
+                isLoading = false // Also reset loading state
+            )
+        }
     }
 
     /** Updates the email in the UI state. */
@@ -96,13 +130,10 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
 
     /** Validates the password length (basic). */
     private fun isPasswordValid(password: String): Boolean {
-        return password.length >= 6
+        return password.length >= 8 && password.any { it.isDigit() } && password.any { it.isLetter() } && password.any { !it.isLetterOrDigit() }
     }
 
-    // onEmailContinue() is removed as EmailEntryScreen is being removed.
-    // Navigation goes directly to CreateAccountDetailsScreen from AuthOptions for signup.
-
-    // --- New methods for signup details ---
+    // --- Methods for signup details ---
     fun onUsernameChanged(username: String) {
         _uiState.update { it.copy(username = username, usernameError = null) }
     }
@@ -119,26 +150,37 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
         _uiState.update { it.copy(lastName = lastName, lastNameError = null) }
     }
 
+    /** Updates date of birth from Date Picker. Expects "DD-MM-YYYY" format. */
     fun onDateOfBirthChanged(dob: String) {
         _uiState.update { it.copy(dateOfBirth = dob, dateOfBirthError = null) }
+    }
+
+    /** 
+     * Updates date of birth from manual text input.
+     * The input string is already formatted by DateVisualTransformation.
+     */
+    fun onDateOfBirthManuallyChanged(formattedInput: String) {
+        // The input is already formatted by DateVisualTransformation (e.g., "12-03-1990" or "12-03-")
+        // We just need to update the state with this formatted string.
+        // The validation in onSignUpAttempt will parse this DD-MM-YYYY string.
+        _uiState.update { it.copy(dateOfBirth = formattedInput, dateOfBirthError = null) }
     }
 
     fun onGenderChanged(gender: String) {
         _uiState.update { it.copy(gender = gender, genderError = null) }
     }
 
-    /** Called when "Continue" is clicked on CreateAccountDetailsScreen. */
-    fun onCreateAccountDetailsContinue() {
+    /** Called when the "Sign Up" button is clicked on the consolidated signup screen. */
+    fun onSignUpAttempt() {
         val state = _uiState.value
         var isValid = true
 
-        // Validate Email
+        _uiState.update { it.copy(emailError = null, usernameError = null, firstNameError = null, lastNameError = null, dateOfBirthError = null, passwordError = null, confirmPasswordError = null) }
+
         if (!isEmailValid(state.email)) {
             _uiState.update { it.copy(emailError = "Invalid email format") }
             isValid = false
         }
-
-        // Validate existing details
         if (state.username.isBlank()) {
             _uiState.update { it.copy(usernameError = "Username cannot be empty") }
             isValid = false
@@ -151,15 +193,38 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
             _uiState.update { it.copy(lastNameError = "Last name cannot be empty") }
             isValid = false
         }
-        if (state.dateOfBirth.isBlank()) { // Basic validation for now
+
+        if (state.dateOfBirth.isBlank()) {
             _uiState.update { it.copy(dateOfBirthError = "Date of birth cannot be empty") }
             isValid = false
+        } else {
+            try {
+                val birthDate = dateFormatter.parse(state.dateOfBirth)
+                if (birthDate != null) {
+                    val today = Calendar.getInstance()
+                    val dobCalendar = Calendar.getInstance().apply { time = birthDate }
+                    var age = today.get(Calendar.YEAR) - dobCalendar.get(Calendar.YEAR)
+                    if (today.get(Calendar.DAY_OF_YEAR) < dobCalendar.get(Calendar.DAY_OF_YEAR)) {
+                        age--
+                    }
+                    if (age < 13) {
+                        _uiState.update { it.copy(dateOfBirthError = "You must be at least 13 years old to sign up.") }
+                        isValid = false
+                    }
+                } else {
+                    _uiState.update { it.copy(dateOfBirthError = "Invalid date format.") }
+                    isValid = false
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(dateOfBirthError = "Invalid date format.") }
+                isValid = false
+                Log.e("EmailAuthViewModel", "Date parsing error: ", e)
+            }
         }
-        // Gender validation is currently commented out as optional
+        // Gender validation (can be added if specific rules apply, e.g., not empty)
 
-        // Add password validation (since password fields will be on this screen)
         if (!isPasswordValid(state.password)) {
-            _uiState.update { it.copy(passwordError = "Password must be at least 6 characters") }
+            _uiState.update { it.copy(passwordError = "Password must be at least 8 characters, include letters, numbers, and special characters.") }
             isValid = false
         }
         if (state.password != state.confirmPassword) {
@@ -170,55 +235,51 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
         if (!isValid) return
 
         _uiState.update { it.copy(isLoading = true) }
-        // Placeholder for actual account creation logic using all details including password
         viewModelScope.launch {
             kotlinx.coroutines.delay(2000) // Simulate network request
             _uiState.update { it.copy(isLoading = false) }
-
-            if (isValid && state.username.isNotBlank() && state.email.isNotBlank() && state.password.isNotBlank()) { // check isValid flag too
-                _snackbarMessage.emit("Account created successfully for ${state.email} with username ${state.username}!")
-                // TODO: Navigate to a Home/Main screen upon successful auth
-                // _navigationEvent.emit(AppScreen.HomeScreen.route) // Example
+            val isBackendSuccess = true // Simulate backend response
+            if (isBackendSuccess) {
+                _snackbarMessage.emit("Account created successfully for ${state.email}!")
+                clearSignUpForm() // Clear form on successful signup
             } else {
-                _snackbarMessage.emit("Account creation failed. Please check details and try again.")
+                _snackbarMessage.emit("Account creation failed. Please check details or try again later.")
+                // Optionally clear or not clear form on failure, UX decision
+                // clearSignUpForm() 
             }
         }
     }
 
-    /** Called when the final submit button is clicked on the PasswordEntryScreen. */
+    /** 
+     * This method might still be used if there's a separate login flow that 
+     * specifically uses an email/password entry screen separate from the main LoginScreen.
+     * For the consolidated signup, onSignUpAttempt() is used.
+     */
     fun onSubmitCredentials() {
         val state = _uiState.value
         var isValid = true
-
-        // This method is now only relevant if PasswordEntryScreen is used for a login flow.
-        // For signup, CreateAccountDetailsScreen and its continue method are used.
-
         if (!isPasswordValid(state.password)) {
-            _uiState.update { it.copy(passwordError = "Password must be at least 6 characters") }
+            _uiState.update { it.copy(passwordError = "Password must be at least 8 characters, include letters, numbers, and special characters.") }
             isValid = false
         }
-
+        if (state.flowType == "signup" && state.password != state.confirmPassword) {
+            _uiState.update { it.copy(confirmPasswordError = "Passwords do not match") }
+            isValid = false
+        }
         if (!isValid) return
-
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            kotlinx.coroutines.delay(1500) // Simulate network request
+            kotlinx.coroutines.delay(500)
             _uiState.update { it.copy(isLoading = false) }
-
-            // This path is now primarily for a login attempt via a dedicated PasswordEntryScreen (if used)
             if (state.flowType == "login") {
-                if (state.email == "test@example.com" && state.password == "password") { // Mock success
+                if (state.email == "test@example.com" && state.password == "password") {
                     _snackbarMessage.emit("Login successful for ${state.email}")
-                    // TODO: Navigate to a Home/Main screen upon successful auth
-                    // _navigationEvent.emit(AppScreen.HomeScreen.route) // Example
                 } else {
                     _snackbarMessage.emit("Authentication failed. Please try again.")
                     _uiState.update { it.copy(passwordError = "Invalid credentials") }
                 }
             } else if (state.flowType == "signup") {
-                // This path in onSubmitCredentials for signup is now deprecated by the new flow.
-                // CreateAccountDetailsScreen handles the final step of signup.
-                _snackbarMessage.emit("Info: Signup via this (old password entry) path is deprecated.")
+                _navigationEvent.emit(AppScreen.EmailSignUpScreen.createRoute(state.flowType))
             }
         }
     }

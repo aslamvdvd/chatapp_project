@@ -24,13 +24,13 @@ class AuthOptionsViewModel : ViewModel() {
 
     /**
      * Called when the "Continue with Email" button is clicked.
-     * Navigates to CreateAccountDetails for signup, which now includes email and password fields
+     * Navigates to EmailEntryScreen for signup, which now includes email and password fields
      * or LoginScreen for login.
      */
     fun onContinueWithEmailClicked(flowType: String) {
         viewModelScope.launch {
             if (flowType == "signup") {
-                _navigationEvent.emit(AppScreen.CreateAccountDetails.createRoute(flowType))
+                _navigationEvent.emit(AppScreen.EmailSignUpScreen.createRoute(flowType))
             } else { // "login"
                 _navigationEvent.emit(AppScreen.Login.route) // Login screen for login flow
             }
