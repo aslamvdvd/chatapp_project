@@ -350,7 +350,7 @@ fun EmailSignUpScreen( // Renamed from CreateAccountDetailsScreen
             Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
 
             AppButton(
-                text = "Sign Up",
+                text = "Create Account",
                 onClick = {
                     keyboardController?.hide()
                     emailAuthViewModel.onSignUpAttempt()

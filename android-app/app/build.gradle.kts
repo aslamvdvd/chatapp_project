@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -18,6 +19,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        buildConfigField("String", "API_URL", "\"http://192.168.31.103:8080\"")
     }
 
     buildTypes {
@@ -38,6 +40,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.10"
@@ -78,4 +81,13 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+    // Ktor for networking
+    implementation("io.ktor:ktor-client-android:2.3.10")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.10")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.10")
+    implementation("io.ktor:ktor-client-logging:2.3.10") // Optional: for logging
+
+    // Kotlinx Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 } 

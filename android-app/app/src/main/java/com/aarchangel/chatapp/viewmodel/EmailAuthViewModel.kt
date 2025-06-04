@@ -6,6 +6,11 @@ import android.util.Patterns
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aarchangel.chatapp.data.network.AuthService
+import com.aarchangel.chatapp.data.network.AuthServiceImpl
+import com.aarchangel.chatapp.data.network.ConflictException
+import com.aarchangel.chatapp.data.network.ValidationException
+import com.aarchangel.chatapp.data.network.dto.SignUpRequest
 import com.aarchangel.chatapp.navigation.AppScreen
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +23,10 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.Date
+import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.lifecycle.ViewModelProvider
+import androidx.savedstate.SavedStateRegistryOwner
+import android.os.Bundle
 
 /**
  * Data class to hold the UI state for email/password authentication.
@@ -54,7 +63,10 @@ data class EmailAuthUiState(
  * Manages UI state, validation, and navigation events for these flows.
  * // ChatApp by aarchangel
  */
-class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
+class EmailAuthViewModel(
+    private val savedStateHandle: SavedStateHandle,
+    private val authService: AuthService = AuthServiceImpl() // Instantiate AuthService
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EmailAuthUiState())
     val uiState = _uiState.asStateFlow()
@@ -65,18 +77,18 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
     private val _snackbarMessage = MutableSharedFlow<String>()
     val snackbarMessage = _snackbarMessage.asSharedFlow()
 
-    private val dateFormatter = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+    // SDF for parsing UI date and formatting for API
+    private val uiDateFormatter = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+    private val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     init {
         val flowTypeFromNav: String? = savedStateHandle["flowType"]
-        val emailFromNav: String? = savedStateHandle["email"] // For pre-filling if coming from a different flow later
-
+        val emailFromNav: String? = savedStateHandle["email"]
         Log.d("EmailAuthViewModel", "Init - flowTypeFromNav: '$flowTypeFromNav', emailFromNav: '$emailFromNav'")
-
         _uiState.update {
             it.copy(
                 flowType = flowTypeFromNav ?: it.flowType,
-                email = emailFromNav ?: it.email // Pre-fill email if provided
+                email = emailFromNav ?: it.email
             )
         }
         Log.d("EmailAuthViewModel", "Updated uiState - flowType: '${_uiState.value.flowType}', email: '${_uiState.value.email}'")
@@ -103,7 +115,7 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
                 lastNameError = null,
                 dateOfBirthError = null,
                 genderError = null,
-                isLoading = false // Also reset loading state
+                isLoading = false
             )
         }
     }
@@ -173,80 +185,134 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
     /** Called when the "Sign Up" button is clicked on the consolidated signup screen. */
     fun onSignUpAttempt() {
         val state = _uiState.value
-        var isValid = true
+        var validationPassed = true
 
-        _uiState.update { it.copy(emailError = null, usernameError = null, firstNameError = null, lastNameError = null, dateOfBirthError = null, passwordError = null, confirmPasswordError = null) }
+        // Clear previous errors
+        _uiState.update { it.copy(isLoading = false, emailError = null, usernameError = null, firstNameError = null, lastNameError = null, dateOfBirthError = null, genderError = null, passwordError = null, confirmPasswordError = null) }
 
         if (!isEmailValid(state.email)) {
             _uiState.update { it.copy(emailError = "Invalid email format") }
-            isValid = false
+            validationPassed = false
         }
         if (state.username.isBlank()) {
             _uiState.update { it.copy(usernameError = "Username cannot be empty") }
-            isValid = false
+            validationPassed = false
         }
         if (state.firstName.isBlank()) {
             _uiState.update { it.copy(firstNameError = "First name cannot be empty") }
-            isValid = false
+            validationPassed = false
         }
         if (state.lastName.isBlank()) {
             _uiState.update { it.copy(lastNameError = "Last name cannot be empty") }
-            isValid = false
+            validationPassed = false
         }
 
+        var apiDob: String? = null
         if (state.dateOfBirth.isBlank()) {
             _uiState.update { it.copy(dateOfBirthError = "Date of birth cannot be empty") }
-            isValid = false
+            validationPassed = false
         } else {
             try {
-                val birthDate = dateFormatter.parse(state.dateOfBirth)
-                if (birthDate != null) {
+                val parsedDate = uiDateFormatter.parse(state.dateOfBirth)
+                if (parsedDate != null) {
+                    apiDob = apiDateFormatter.format(parsedDate)
+                    // Age validation (COPPA)
                     val today = Calendar.getInstance()
-                    val dobCalendar = Calendar.getInstance().apply { time = birthDate }
+                    val dobCalendar = Calendar.getInstance().apply { time = parsedDate }
                     var age = today.get(Calendar.YEAR) - dobCalendar.get(Calendar.YEAR)
                     if (today.get(Calendar.DAY_OF_YEAR) < dobCalendar.get(Calendar.DAY_OF_YEAR)) {
                         age--
                     }
                     if (age < 13) {
-                        _uiState.update { it.copy(dateOfBirthError = "You must be at least 13 years old to sign up.") }
-                        isValid = false
+                        _uiState.update { it.copy(dateOfBirthError = "You must be at least 13 years old.") }
+                        validationPassed = false
                     }
                 } else {
                     _uiState.update { it.copy(dateOfBirthError = "Invalid date format.") }
-                    isValid = false
+                    validationPassed = false
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(dateOfBirthError = "Invalid date format.") }
-                isValid = false
-                Log.e("EmailAuthViewModel", "Date parsing error: ", e)
+                validationPassed = false
+                Log.e("EmailAuthViewModel", "Date parsing/formatting error: ", e)
             }
         }
-        // Gender validation (can be added if specific rules apply, e.g., not empty)
+
+        if (state.gender.isBlank()) { // Example: Making gender mandatory
+            // _uiState.update { it.copy(genderError = "Gender cannot be empty") }
+            // validationPassed = false
+            // For now, it's optional as per backend spec
+        }
 
         if (!isPasswordValid(state.password)) {
-            _uiState.update { it.copy(passwordError = "Password must be at least 8 characters, include letters, numbers, and special characters.") }
-            isValid = false
+            _uiState.update { it.copy(passwordError = "Password: min 8 chars, letters, numbers, special chars.") }
+            validationPassed = false
         }
         if (state.password != state.confirmPassword) {
             _uiState.update { it.copy(confirmPasswordError = "Passwords do not match") }
-            isValid = false
+            validationPassed = false
         }
 
-        if (!isValid) return
+        if (!validationPassed || apiDob == null) return
 
         _uiState.update { it.copy(isLoading = true) }
+
+        val signUpRequest = SignUpRequest(
+            email = state.email,
+            username = state.username,
+            firstName = state.firstName,
+            middleName = state.middleName.takeIf { it.isNotBlank() },
+            lastName = state.lastName,
+            dateOfBirth = apiDob, // Use YYYY-MM-DD formatted date
+            gender = state.gender.takeIf { it.isNotBlank() },
+            password = state.password,
+            confirmPassword = state.confirmPassword
+        )
+
         viewModelScope.launch {
-            kotlinx.coroutines.delay(2000) // Simulate network request
-            _uiState.update { it.copy(isLoading = false) }
-            val isBackendSuccess = true // Simulate backend response
-            if (isBackendSuccess) {
-                _snackbarMessage.emit("Account created successfully for ${state.email}!")
-                clearSignUpForm() // Clear form on successful signup
-            } else {
-                _snackbarMessage.emit("Account creation failed. Please check details or try again later.")
-                // Optionally clear or not clear form on failure, UX decision
-                // clearSignUpForm() 
-            }
+            val result = authService.signUp(signUpRequest)
+            result.fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isLoading = false) }
+                    _snackbarMessage.emit("Account created successfully! Please log in.")
+                    clearSignUpForm() 
+                    // Optionally navigate to login screen: _navigationEvent.emit(AppScreen.LoginScreen.route)
+                },
+                onFailure = { exception ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    when (exception) {
+                        is ValidationException -> {
+                            _snackbarMessage.emit(exception.errorResponse.message) // General validation message
+                            exception.errorResponse.errors?.forEach { apiError ->
+                                when (apiError.field) {
+                                    "email" -> _uiState.update { it.copy(emailError = apiError.message) }
+                                    "username" -> _uiState.update { it.copy(usernameError = apiError.message) }
+                                    "first_name" -> _uiState.update { it.copy(firstNameError = apiError.message) }
+                                    "last_name" -> _uiState.update { it.copy(lastNameError = apiError.message) }
+                                    "date_of_birth" -> _uiState.update { it.copy(dateOfBirthError = apiError.message) }
+                                    "gender" -> _uiState.update { it.copy(genderError = apiError.message) }
+                                    "password" -> _uiState.update { it.copy(passwordError = apiError.message) }
+                                    "confirm_password" -> _uiState.update { it.copy(confirmPasswordError = apiError.message) }
+                                    // Add other fields as necessary
+                                }
+                            }
+                        }
+                        is ConflictException -> {
+                            _snackbarMessage.emit(exception.message ?: "An email or username conflict occurred.")
+                            // Heuristic: if message contains "email", show email error, else username error
+                            if (exception.message?.contains("email", ignoreCase = true) == true) {
+                                _uiState.update { it.copy(emailError = exception.message) }
+                            } else if (exception.message?.contains("username", ignoreCase = true) == true) {
+                                _uiState.update { it.copy(usernameError = exception.message) }
+                            }
+                        }
+                        else -> {
+                            _snackbarMessage.emit("Sign up failed: ${exception.message ?: "Unknown error"}")
+                            Log.e("EmailAuthViewModel", "SignUp failed", exception)
+                        }
+                    }
+                }
+            )
         }
     }
 
@@ -280,6 +346,26 @@ class EmailAuthViewModel(private val savedStateHandle: SavedStateHandle) : ViewM
                 }
             } else if (state.flowType == "signup") {
                 _navigationEvent.emit(AppScreen.EmailSignUpScreen.createRoute(state.flowType))
+            }
+        }
+    }
+
+    companion object {
+        fun provideFactory(
+            authService: AuthService,
+            owner: SavedStateRegistryOwner,
+            defaultArgs: Bundle? = null
+        ): ViewModelProvider.Factory = object : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(
+                key: String,
+                modelClass: Class<T>,
+                handle: SavedStateHandle
+            ): T {
+                if (modelClass.isAssignableFrom(EmailAuthViewModel::class.java)) {
+                    return EmailAuthViewModel(handle, authService) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class")
             }
         }
     }

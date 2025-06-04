@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 
 # Install build dependencies
 # Needed for some crates that link against C libraries (e.g., openssl-sys, some database drivers)
-RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev clang
+RUN apt-get update && apt-get install -y libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
 
 # Copy the entire backend source code
 COPY . .
@@ -15,13 +15,13 @@ COPY . .
 RUN cargo build --release
 
 # Stage 2: Runtime
-# Using a slim Debian image for a smaller final image size.
-FROM debian:bullseye-slim
+# Using Debian Bookworm slim as it includes libssl3 which rust:slim seems to link against
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Install runtime dependencies (e.g. SSL certificates)
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies (libssl3 and ca-certificates)
+RUN apt-get update && apt-get install -y libssl3 ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy the .env file.
 # IMPORTANT: This expects a .env file to be present in the build context's root (/usr/src/app in builder stage)

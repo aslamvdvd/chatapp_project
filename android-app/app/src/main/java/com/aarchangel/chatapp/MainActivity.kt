@@ -32,6 +32,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.ui.platform.LocalSavedStateRegistryOwner
+import androidx.compose.ui.platform.LocalContext
 import com.aarchangel.chatapp.config.AppConfig
 import com.aarchangel.chatapp.navigation.AppScreen
 import com.aarchangel.chatapp.ui.components.SharedAppHeader
@@ -46,6 +48,7 @@ import com.aarchangel.chatapp.viewmodel.EmailAuthViewModel
 import com.aarchangel.chatapp.viewmodel.LoginViewModel
 import com.aarchangel.chatapp.viewmodel.WelcomeViewModel
 import kotlinx.coroutines.launch
+import com.aarchangel.chatapp.data.network.AuthServiceImpl
 
 /**
  * Main activity for the ChatApp application.
@@ -221,7 +224,19 @@ fun ChatAppRoot() {
         val navController = rememberNavController()
         val welcomeViewModel: WelcomeViewModel = viewModel()
         val authOptionsViewModel: AuthOptionsViewModel = viewModel()
-        val emailAuthViewModel: EmailAuthViewModel = viewModel()
+
+        // Create AuthService instance (or obtain via DI later)
+        val authService = remember { AuthServiceImpl() }
+        // Get the SavedStateRegistryOwner from the current composition
+        val owner = LocalSavedStateRegistryOwner.current
+        // Get default arguments from the activity's intent (can be null)
+        val activity = (LocalContext.current as? ComponentActivity)
+        val defaultArgs = activity?.intent?.extras
+
+        val emailAuthViewModel: EmailAuthViewModel = viewModel(
+            factory = EmailAuthViewModel.provideFactory(authService, owner, defaultArgs)
+        )
+
         val loginViewModel: LoginViewModel = viewModel()
         val snackbarHostState = remember { SnackbarHostState() }
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
