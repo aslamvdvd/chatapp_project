@@ -67,7 +67,9 @@ This directory contains the backend API server built with Rust and the Actix Web
     cargo run
     ```
     The server will typically start on `http://0.0.0.0:8080` (or the port specified in `.env`).
-    The health check endpoint will be available at `GET /api/health`.
+    The general health check endpoint will be available at `GET /health`.
+    The database health check endpoint will be available at `GET /health/db`.
+    A placeholder admin endpoint is available at `GET /admin`.
 
 6.  **Build for release:**
     ```bash

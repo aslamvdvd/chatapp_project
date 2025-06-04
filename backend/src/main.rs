@@ -21,16 +21,13 @@ use crate::core::app_state::AppState;
 use crate::core::feature_flags::FeatureFlags;
 use crate::logging::init_logging;
 use crate::routes::auth::configure_auth_routes;
+use crate::routes::admin_routes::configure_admin_routes;
 use crate::services::auth_service::AuthService;
+use crate::handlers::health_handler::{health_check, db_health_check};
 
 // For OpenAPI/Swagger documentation
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-
-/// Basic health check endpoint.
-async fn health_check() -> impl Responder {
-    HttpResponse::Ok().body("chatapp_by_aarchangel backend is healthy!")
-}
 
 /// Main function to set up and run the Actix web server.
 #[actix_web::main]
@@ -91,13 +88,17 @@ async fn main() -> std::io::Result<()> {
     #[openapi(
         paths(
             crate::handlers::auth_handler::signup_handler,
-            // health_check
+            crate::handlers::health_handler::health_check,
+            crate::handlers::health_handler::db_health_check,
+            crate::handlers::admin_handler::admin_root_handler
         ),
         components(
             schemas(crate::models::user::SignupUserDto, crate::models::user::UserPublicData, crate::handlers::auth_handler::ApiError, crate::core::rbac::Role)
         ),
         tags(
-            (name = "chatapp_by_aarchangel_backend", description = "ChatApp by aarchangel - Backend API")
+            (name = "chatapp_by_aarchangel_backend", description = "ChatApp by aarchangel - Backend API"),
+            (name = "Health", description = "Health Check Operations"),
+            (name = "Admin", description = "Admin Operations")
         ),
         info(
             title = "ChatApp by aarchangel - Backend API",
@@ -135,7 +136,9 @@ async fn main() -> std::io::Result<()> {
             // or AuthService could be retrieved from AppState in handlers.
             .wrap(tracing_actix_web::TracingLogger::default())
             .configure(configure_auth_routes)
+            .configure(configure_admin_routes)
             .service(web::resource("/health").route(web::get().to(health_check)))
+            .service(web::resource("/health/db").route(web::get().to(db_health_check)))
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-doc/openapi.json", openapi.clone()),
             )
