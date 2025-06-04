@@ -1,11 +1,12 @@
-// Placeholder for auth_service.rs 
+// Placeholder for auth_service.rs
 
+use crate::core::rbac::Role;
 use crate::models::user::{SignupUserDto, UserPublicData};
 use crate::utils::hash::hash_password;
-use sqlx::PgPool;
-use uuid::Uuid;
 use chrono::{NaiveDate, Utc};
+use sqlx::PgPool;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Service layer error types.
 #[derive(Debug, thiserror::Error)]
@@ -47,7 +48,10 @@ impl AuthService {
     ///
     /// # Returns
     /// A `Result` containing `UserPublicData` on success, or `AuthServiceError` on failure.
-    pub async fn signup_user(&self, signup_data: SignupUserDto) -> Result<UserPublicData, AuthServiceError> {
+    pub async fn signup_user(
+        &self,
+        signup_data: SignupUserDto,
+    ) -> Result<UserPublicData, AuthServiceError> {
         // 1. Validate input (confirm_password is implicitly validated by `must_match`)
         // The validator crate handles this at the DTO deserialization level or handler level.
         // Here, we assume it has been validated by the handler or Actix extractor.
@@ -57,49 +61,63 @@ impl AuthService {
             .map_err(|e| AuthServiceError::InvalidDateFormat(e.to_string()))?;
 
         // 3. Hash password
-        let password_hash = hash_password(&signup_data.password)
-            .map_err(AuthServiceError::PasswordHashing)?;
+        let password_hash =
+            hash_password(&signup_data.password).map_err(AuthServiceError::PasswordHashing)?;
 
         // 4. Start a database transaction
-        let mut tx = self.db_pool.begin().await.map_err(AuthServiceError::Database)?;
+        let mut tx = self
+            .db_pool
+            .begin()
+            .await
+            .map_err(AuthServiceError::Database)?;
 
         // 5. Check for existing email or username
-        let email_exists: (bool,) = sqlx::query_as("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)")
-            .bind(&signup_data.email)
-            .fetch_one(&mut *tx)
-            .await?;
+        let email_exists: (bool,) =
+            sqlx::query_as("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)")
+                .bind(&signup_data.email)
+                .fetch_one(&mut *tx)
+                .await?;
         if email_exists.0 {
             let mut errors = HashMap::new();
-            errors.insert("email".to_string(), vec!["Email already exists.".to_string()]);
+            errors.insert(
+                "email".to_string(),
+                vec!["Email already exists.".to_string()],
+            );
             return Err(AuthServiceError::Validation(errors));
         }
 
-        let username_exists: (bool,) = sqlx::query_as("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
-            .bind(&signup_data.username)
-            .fetch_one(&mut *tx)
-            .await?;
+        let username_exists: (bool,) =
+            sqlx::query_as("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
+                .bind(&signup_data.username)
+                .fetch_one(&mut *tx)
+                .await?;
         if username_exists.0 {
             let mut errors = HashMap::new();
-            errors.insert("username".to_string(), vec!["Username already exists.".to_string()]);
+            errors.insert(
+                "username".to_string(),
+                vec!["Username already exists.".to_string()],
+            );
             return Err(AuthServiceError::Validation(errors));
         }
 
         // 6. Create new user
         let new_user_id = Uuid::new_v4();
         let now = Utc::now();
+        let default_role = Role::default();
 
         let result = sqlx::query(
-            "INSERT INTO users (id, email, username, password_hash, first_name, middle_name, last_name, date_of_birth, gender, created_at, updated_at) \n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)"
+            "INSERT INTO users (id, email, username, password_hash, first_name, middle_name, last_name, date_of_birth, gender, role, created_at, updated_at) \n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)"
         )
         .bind(new_user_id)
         .bind(&signup_data.email)
         .bind(&signup_data.username)
         .bind(&password_hash)
         .bind(&signup_data.first_name)
-        .bind(signup_data.middle_name.as_ref()) // Option<String> needs .as_ref()
+        .bind(signup_data.middle_name.as_ref())
         .bind(&signup_data.last_name)
         .bind(dob)
         .bind(signup_data.gender.as_ref())
+        .bind(default_role)
         .bind(now)
         .bind(now)
         .execute(&mut *tx)
@@ -107,12 +125,10 @@ impl AuthService {
 
         match result {
             Ok(_) => {
-                // 7. Commit transaction
                 tx.commit().await.map_err(AuthServiceError::Database)?;
-                
+
                 // TODO: Send verification email
 
-                // 8. Return public user data
                 Ok(UserPublicData {
                     id: new_user_id,
                     email: signup_data.email,
@@ -120,15 +136,14 @@ impl AuthService {
                     first_name: signup_data.first_name,
                     middle_name: signup_data.middle_name,
                     last_name: signup_data.last_name,
-                    date_of_birth: signup_data.date_of_birth, // Return as string as received
+                    date_of_birth: signup_data.date_of_birth,
                     gender: signup_data.gender,
+                    role: default_role,
                     created_at: now,
                 })
             }
             Err(e) => {
-                // Rollback transaction on error
-                let _ = tx.rollback().await; // Best effort rollback, log error if it fails
-                // TODO: Log rollback error if any
+                let _ = tx.rollback().await;
                 Err(AuthServiceError::Database(e))
             }
         }
@@ -139,4 +154,4 @@ impl AuthService {
 // or use a more explicit type that sqlx can map to. Often, a simple struct works best.
 // For example: struct Exists { exists: bool; }
 // However, for a single boolean, sqlx often handles it with a tuple if the DB returns one column.
-// If issues arise, use `fetch_optional` and check if `Some` or `None`. 
+// If issues arise, use `

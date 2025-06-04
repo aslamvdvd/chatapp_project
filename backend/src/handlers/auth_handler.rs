@@ -1,14 +1,14 @@
+use crate::core::app_state::AppState;
+use crate::models::user::SignupUserDto;
+use crate::services::auth_service::{AuthService, AuthServiceError};
 use actix_web::{
     web::{Data, Json},
     HttpResponse, ResponseError,
 };
-use crate::models::user::SignupUserDto;
-use crate::services::auth_service::{AuthService, AuthServiceError};
 use serde::Serialize;
-use validator::Validate;
 use std::collections::HashMap;
 use utoipa::ToSchema;
-use serde_json::json;
+use validator::Validate;
 
 /// Represents errors that can occur in the auth handlers.
 /// Implements `ResponseError` to convert into HTTP responses.
@@ -22,10 +22,10 @@ use serde_json::json;
     }
 }))]
 pub struct ApiError {
-    status_code: u16,
-    message: String,
+    pub status_code: u16,
+    pub message: String,
     #[schema(value_type = Option<HashMap<String, Vec<String>>>)]
-    errors: Option<HashMap<String, Vec<String>>>
+    pub errors: Option<HashMap<String, Vec<String>>>,
 }
 
 impl std::fmt::Display for ApiError {
@@ -36,13 +36,15 @@ impl std::fmt::Display for ApiError {
 
 impl ResponseError for ApiError {
     fn status_code(&self) -> actix_web::http::StatusCode {
-        actix_web::http::StatusCode::from_u16(self.status_code).unwrap_or(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR)
+        actix_web::http::StatusCode::from_u16(self.status_code)
+            .unwrap_or(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR)
     }
 
     fn error_response(&self) -> HttpResponse {
         let mut response = match self.status_code {
             400 => HttpResponse::BadRequest(),
-            409 => HttpResponse::Conflict(), // For existing email/username
+            403 => HttpResponse::Forbidden(),
+            409 => HttpResponse::Conflict(),
             500 => HttpResponse::InternalServerError(),
             _ => HttpResponse::InternalServerError(),
         };
@@ -77,11 +79,11 @@ impl From<AuthServiceError> for ApiError {
             AuthServiceError::InvalidDateFormat(msg) => ApiError {
                 status_code: 400,
                 message: format!("Invalid date format: {}. Use YYYY-MM-DD.", msg),
-                errors: None, 
+                errors: None,
             },
             AuthServiceError::Unexpected(msg) => {
                 tracing::error!(target: "system_events", error_message = %msg, "Unexpected error in auth service during signup attempt.");
-                 ApiError {
+                ApiError {
                     status_code: 500,
                     message: "An unexpected error occurred.".to_string(),
                     errors: None,
@@ -97,6 +99,7 @@ impl From<AuthServiceError> for ApiError {
 /// to perform the signup logic.
 ///
 /// # Arguments
+/// * `app_state` - `Data<AppState>` injected by Actix.
 /// * `auth_service` - `Data<AuthService>` injected by Actix.
 /// * `signup_data` - `Json<SignupUserDto>` extracted from the request body.
 ///
@@ -109,20 +112,34 @@ impl From<AuthServiceError> for ApiError {
     responses(
         (status = 201, description = "User created successfully", body = UserPublicData),
         (status = 400, description = "Validation error or invalid input", body = ApiError),
+        (status = 403, description = "Feature disabled", body = ApiError),
         (status = 409, description = "Email or username already exists", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     )
 )]
 pub async fn signup_handler(
+    app_state: Data<AppState>,
     auth_service: Data<AuthService>,
     signup_user_dto: Json<SignupUserDto>,
 ) -> Result<HttpResponse, ApiError> {
+    if !app_state.feature_flags.signup_enabled {
+        tracing::warn!(target: "user_events", "Signup attempt while feature is disabled.");
+        return Err(ApiError {
+            status_code: 403,
+            message: "Signup feature is currently disabled.".to_string(),
+            errors: None,
+        });
+    }
+
     if let Err(validation_errors) = signup_user_dto.validate() {
         let mut error_map = HashMap::new();
         for (field, errors) in validation_errors.field_errors() {
             error_map.insert(
                 field.to_string(),
-                errors.iter().map(|e| e.message.clone().unwrap_or_default().to_string()).collect(),
+                errors
+                    .iter()
+                    .map(|e| e.message.clone().unwrap_or_default().to_string())
+                    .collect(),
             );
         }
         return Err(ApiError {
@@ -149,4 +166,4 @@ pub async fn signup_handler(
             Err(service_error.into())
         }
     }
-} 
+}

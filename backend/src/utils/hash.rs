@@ -1,11 +1,8 @@
-// Placeholder for hash.rs (Argon2 utils) 
+// Placeholder for hash.rs (Argon2 utils)
 
 use argon2::{
-    password_hash::{
-        rand_core::OsRng,
-        PasswordHash, PasswordHasher, PasswordVerifier, SaltString
-    },
-    Argon2
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2,
 };
 
 /// Hashes a password using Argon2.
@@ -36,11 +33,9 @@ pub fn hash_password(password: &str) -> Result<String, String> {
 /// Returns `false` also if parsing the hash string fails.
 pub fn verify_password(password: &str, hash_str: &str) -> bool {
     match PasswordHash::new(hash_str) {
-        Ok(parsed_hash) => {
-            Argon2::default()
-                .verify_password(password.as_bytes(), &parsed_hash)
-                .is_ok()
-        }
+        Ok(parsed_hash) => Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .is_ok(),
         Err(_) => {
             tracing::warn!(target: "system_events", "Error parsing password hash string during verification. Hash might be malformed or from an incompatible system.");
             false
@@ -67,4 +62,4 @@ mod tests {
         let invalid_hash = "not_a_valid_argon2_hash";
         assert!(!verify_password(password, invalid_hash));
     }
-} 
+}

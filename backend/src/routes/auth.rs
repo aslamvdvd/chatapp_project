@@ -1,5 +1,5 @@
-use actix_web::web;
 use crate::handlers::auth_handler::signup_handler;
+use actix_web::web;
 
 /// Configures authentication routes.
 ///
@@ -9,8 +9,6 @@ use crate::handlers::auth_handler::signup_handler;
 /// * `cfg` - A mutable reference to Actix `web::ServiceConfig`.
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/auth")
-            .route("/signup", web::post().to(signup_handler))
-            // TODO: Add routes for /login, /logout, /refresh-token, /request-password-reset, /reset-password etc.
+        web::scope("/auth").route("/signup", web::post().to(signup_handler)), // TODO: Add routes for /login, /logout, /refresh-token, /request-password-reset, /reset-password etc.
     );
 }

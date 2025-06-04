@@ -1,31 +1,31 @@
-use actix_web::{web::{self, Data}, App, HttpServer, Responder, HttpResponse};
+use actix_web::{
+    web::{self, Data},
+    App, HttpResponse, HttpServer, Responder,
+};
 use dotenvy::dotenv;
 use std::env;
+use std::sync::Arc;
 
 // Modules
+pub mod core;
 pub mod db;
 pub mod handlers;
+pub mod logging;
 pub mod models;
 pub mod routes;
 pub mod services;
 pub mod utils;
-pub mod logging;
 
 // Use statements for services and routes
-use crate::services::auth_service::AuthService;
-use crate::routes::auth::configure_auth_routes;
+use crate::core::app_state::AppState;
+use crate::core::feature_flags::FeatureFlags;
 use crate::logging::init_logging;
+use crate::routes::auth::configure_auth_routes;
+use crate::services::auth_service::AuthService;
 
 // For OpenAPI/Swagger documentation
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-
-/// Application state, shared across all handlers.
-/// Currently empty, but can hold shared resources like a config struct if needed later.
-pub struct AppState {
-    // auth_service: AuthService, // Removed as AuthService is injected directly via Data<AuthService>
-    // TODO: Add other shared resources like app configuration if needed.
-}
 
 /// Basic health check endpoint.
 async fn health_check() -> impl Responder {
@@ -41,7 +41,7 @@ async fn main() -> std::io::Result<()> {
     // Initialize logging FIRST
     let (_system_log_guard, _user_log_guard, _admin_log_guard) = init_logging()
         .expect("Failed to initialize logging. Ensure 'logs' directory can be created.");
-    
+
     // Replace previous println! with tracing::info!
     tracing::info!(target: "system_events", "Starting chatapp_by_aarchangel backend server...");
 
@@ -53,9 +53,15 @@ async fn main() -> std::io::Result<()> {
         }
         Err(e) => {
             tracing::error!(target: "system_events", error = %e, "Failed to create database pool. Ensure DB is running and DATABASE_URL is set.");
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            ));
         }
     };
+
+    // Initialize FeatureFlags (will be defined in the next step)
+    let feature_flags = Arc::new(FeatureFlags::from_env());
 
     // Run SQLx migrations
     tracing::info!(target: "system_events", "Applying database migrations...");
@@ -63,7 +69,9 @@ async fn main() -> std::io::Result<()> {
         .run(&db_pool)
         .await
     {
-        Ok(_) => tracing::info!(target: "system_events", "Database migrations applied successfully."),
+        Ok(_) => {
+            tracing::info!(target: "system_events", "Database migrations applied successfully.")
+        }
         Err(e) => {
             tracing::error!(target: "system_events", error = %e, "Failed to apply database migrations.");
             // Depending on the error, you might want to exit here.
@@ -71,33 +79,33 @@ async fn main() -> std::io::Result<()> {
         }
     }
 
-    // Initialize services
-    let auth_service_data = Data::new(AuthService::new(db_pool.clone()));
+    // Create the new AppState
+    let app_state = Data::new(AppState::new(db_pool.clone(), feature_flags.clone()));
 
-    // Application state (now minimal or potentially empty if no other shared state)
-    let app_state_data = Data::new(AppState {}); // Create an empty AppState for now
+    // Initialize services - they might take AppState or specific parts like PgPool
+    // For now, AuthService takes PgPool directly. If it needed AppState, it would be passed here.
+    let auth_service_data = Data::new(AuthService::new(db_pool.clone())); // AuthService still takes PgPool directly
 
     // OpenAPI documentation setup
     #[derive(OpenApi)]
     #[openapi(
         paths(
-            handlers::auth_handler::signup_handler,
-            // TODO: Add other handlers here as they are created
+            crate::handlers::auth_handler::signup_handler,
+            // health_check
         ),
         components(
-            schemas(models::user::SignupUserDto, models::user::UserPublicData, handlers::auth_handler::ApiError)
-            // TODO: Add other DTOs/models here
+            schemas(crate::models::user::SignupUserDto, crate::models::user::UserPublicData, crate::handlers::auth_handler::ApiError, crate::core::rbac::Role)
         ),
         tags(
-            (name = "chatapp_by_aarchangel - Auth", description = "Authentication endpoints")
+            (name = "chatapp_by_aarchangel_backend", description = "ChatApp by aarchangel - Backend API")
         ),
         info(
-            title = "chatapp_by_aarchangel API",
+            title = "ChatApp by aarchangel - Backend API",
             version = "0.1.0",
-            description = "API for chatapp_by_aarchangel",
+            description = "API for GhostTalk (ChatApp by aarchangel)",
             contact(
-                name = "aarchangel Support",
-                email = "support@chatapp.aarchangel.example.com"
+                name = "Support",
+                email = "support@example.com"
             )
         )
     )]
@@ -106,24 +114,31 @@ async fn main() -> std::io::Result<()> {
     let openapi = ApiDoc::openapi();
 
     let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string()).parse::<u16>()
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Invalid PORT number: {}", e)))?;
+    let port = env::var("PORT")
+        .unwrap_or_else(|_| "8080".to_string())
+        .parse::<u16>()
+        .map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Invalid PORT number: {}", e),
+            )
+        })?;
 
     tracing::info!(target: "system_events", host = %host, port = %port, "Server starting...");
     tracing::info!(target: "system_events", swagger_ui_path = format!("http://{}:{}/swagger-ui/", host, port), "Swagger UI available for chatapp_by_aarchangel API");
 
     HttpServer::new(move || {
         App::new()
-            .app_data(app_state_data.clone()) // Share AppState (even if empty)
-            .app_data(auth_service_data.clone()) // Share AuthService directly
-            .wrap(tracing_actix_web::TracingLogger::default()) // Add TracingLogger middleware
-            .configure(configure_auth_routes) // Configure auth routes
-            .service(web::resource("/health").route(web::get().to(health_check))) // Health check
+            .app_data(app_state.clone()) // Pass the new AppState
+            .app_data(auth_service_data.clone()) // AuthService still passed directly for now
+            // If AuthService used AppState, this direct injection might be removed
+            // or AuthService could be retrieved from AppState in handlers.
+            .wrap(tracing_actix_web::TracingLogger::default())
+            .configure(configure_auth_routes)
+            .service(web::resource("/health").route(web::get().to(health_check)))
             .service(
-                SwaggerUi::new("/swagger-ui/{_:.*}")
-                    .url("/api-doc/openapi.json", openapi.clone()),
+                SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-doc/openapi.json", openapi.clone()),
             )
-            // TODO: Add other route configurations here
     })
     .bind((host, port))?
     .run()

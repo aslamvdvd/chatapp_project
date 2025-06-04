@@ -1,12 +1,12 @@
-// Placeholder for user.rs model 
+// Placeholder for user.rs model
 
-use chrono::{NaiveDate, Utc, DateTime};
+use crate::core::rbac::Role;
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
-use utoipa::ToSchema;
-use serde_json::json;
 
 /// Represents a user in the system, used for database interactions.
 #[derive(Debug, Serialize, Deserialize, FromRow)]
@@ -20,6 +20,7 @@ pub struct User {
     pub last_name: String,
     pub date_of_birth: NaiveDate,
     pub gender: Option<String>,
+    pub role: Role,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     // TODO: Add fields like `is_verified`, `last_login_at`, `profile_picture_url` etc. as needed
@@ -77,7 +78,9 @@ pub struct SignupUserDto {
 fn validate_dob(dob: &str) -> Result<(), validator::ValidationError> {
     NaiveDate::parse_from_str(dob, "%Y-%m-%d")
         .map(|_| ())
-        .map_err(|_| validator::ValidationError::new("Invalid date_of_birth format. Use YYYY-MM-DD."))
+        .map_err(|_| {
+            validator::ValidationError::new("Invalid date_of_birth format. Use YYYY-MM-DD.")
+        })
 }
 
 /// Represents the data returned to the client after a successful signup.
@@ -91,6 +94,7 @@ fn validate_dob(dob: &str) -> Result<(), validator::ValidationError> {
     "last_name": "User",
     "date_of_birth": "1990-01-15",
     "gender": "Other",
+    "role": "user",
     "created_at": "2023-10-27T10:30:00Z"
 }))]
 pub struct UserPublicData {
@@ -110,6 +114,7 @@ pub struct UserPublicData {
     pub date_of_birth: String, // Keep as string for response consistency with request
     #[schema(example = "Other")]
     pub gender: Option<String>,
+    pub role: Role,
     #[schema(format = "date-time", example = "2023-10-27T10:30:00Z")]
     pub created_at: DateTime<Utc>,
 }
@@ -125,7 +130,8 @@ impl From<User> for UserPublicData {
             last_name: user.last_name,
             date_of_birth: user.date_of_birth.format("%Y-%m-%d").to_string(),
             gender: user.gender,
+            role: user.role,
             created_at: user.created_at,
         }
     }
-} 
+}
