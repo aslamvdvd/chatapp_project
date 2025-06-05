@@ -283,23 +283,23 @@ class EmailAuthViewModel(
                     when (exception) {
                         is ValidationException -> {
                             _snackbarMessage.emit(exception.errorResponse.message) // General validation message
-                            exception.errorResponse.errors?.forEach { apiError ->
-                                when (apiError.field) {
-                                    "email" -> _uiState.update { it.copy(emailError = apiError.message) }
-                                    "username" -> _uiState.update { it.copy(usernameError = apiError.message) }
-                                    "first_name" -> _uiState.update { it.copy(firstNameError = apiError.message) }
-                                    "last_name" -> _uiState.update { it.copy(lastNameError = apiError.message) }
-                                    "date_of_birth" -> _uiState.update { it.copy(dateOfBirthError = apiError.message) }
-                                    "gender" -> _uiState.update { it.copy(genderError = apiError.message) }
-                                    "password" -> _uiState.update { it.copy(passwordError = apiError.message) }
-                                    "confirm_password" -> _uiState.update { it.copy(confirmPasswordError = apiError.message) }
+                            exception.errorResponse.errors?.forEach { (field, messages) ->
+                                val message = messages.firstOrNull() ?: "Validation Error"
+                                when (field) {
+                                    "email" -> _uiState.update { it.copy(emailError = message) }
+                                    "username" -> _uiState.update { it.copy(usernameError = message) }
+                                    "first_name" -> _uiState.update { it.copy(firstNameError = message) }
+                                    "last_name" -> _uiState.update { it.copy(lastNameError = message) }
+                                    "date_of_birth" -> _uiState.update { it.copy(dateOfBirthError = message) }
+                                    "gender" -> _uiState.update { it.copy(genderError = message) }
+                                    "password" -> _uiState.update { it.copy(passwordError = message) }
+                                    "confirm_password" -> _uiState.update { it.copy(confirmPasswordError = message) }
                                     // Add other fields as necessary
                                 }
                             }
                         }
                         is ConflictException -> {
                             _snackbarMessage.emit(exception.message ?: "An email or username conflict occurred.")
-                            // Heuristic: if message contains "email", show email error, else username error
                             if (exception.message?.contains("email", ignoreCase = true) == true) {
                                 _uiState.update { it.copy(emailError = exception.message) }
                             } else if (exception.message?.contains("username", ignoreCase = true) == true) {

@@ -2,7 +2,9 @@ package com.aarchangel.chatapp
 
 // ChatApp by aarchangel
 
+import android.app.Application
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.*
@@ -49,6 +51,8 @@ import com.aarchangel.chatapp.viewmodel.LoginViewModel
 import com.aarchangel.chatapp.viewmodel.WelcomeViewModel
 import kotlinx.coroutines.launch
 import com.aarchangel.chatapp.data.network.AuthServiceImpl
+import com.aarchangel.chatapp.network.AuthServiceImpl as KtorAuthServiceImpl
+import com.aarchangel.chatapp.data.TokenStorage
 
 /**
  * Main activity for the ChatApp application.
@@ -142,14 +146,13 @@ fun ChatAppNavigation(
         }
     }
 
-    // Observe navigation events from LoginViewModel
+    // Re-add LaunchedEffects for LoginViewModel
     LaunchedEffect(loginViewModel.navigationEvent) {
         loginViewModel.navigationEvent.collect { route ->
             navController.navigate(route)
         }
     }
 
-    // Observe snackbar messages from LoginViewModel
     LaunchedEffect(loginViewModel.snackbarMessage) {
         loginViewModel.snackbarMessage.collect { message ->
             scope.launch {
@@ -201,12 +204,20 @@ fun ChatAppNavigation(
             // It was originally for a generic email auth screen.
             // For now, let's assume it was a placeholder for a screen after successful email/password auth.
             // We should define a proper HomeScreen/DashboardScreen route later.
+            // Example: Text("Dashboard Placeholder: Welcome!")
         }
 
         composable(route = AppScreen.Login.route) {
-            LoginScreen(
-                loginViewModel = loginViewModel,
-                onNavigateBack = { navController.popBackStack() }
+            val context = LocalContext.current // For Toast
+            LoginScreen( // Use the original LoginScreen from java path
+                loginViewModel = loginViewModel, // Pass the original LoginViewModel
+                onNavigateBack = { navController.popBackStack() }, // Original onNavigateBack
+                onNavigateToSignUp = {
+                    navController.navigate(AppScreen.EmailSignUpScreen.createRoute("signup"))
+                },
+                onNavigateToForgotPassword = {
+                    Toast.makeText(context, "Forgot Password: Coming Soon!", Toast.LENGTH_SHORT).show()
+                }
             )
         }
     }
@@ -224,20 +235,36 @@ fun ChatAppRoot() {
         val navController = rememberNavController()
         val welcomeViewModel: WelcomeViewModel = viewModel()
         val authOptionsViewModel: AuthOptionsViewModel = viewModel()
+        val application = LocalContext.current.applicationContext as Application
 
-        // Create AuthService instance (or obtain via DI later)
-        val authService = remember { AuthServiceImpl() }
-        // Get the SavedStateRegistryOwner from the current composition
+        // AuthService for EmailAuthViewModel (Java path, old implementation)
+        val oldAuthService = remember { com.aarchangel.chatapp.data.network.AuthServiceImpl() }
+        
+        // Ktor-based AuthService for LoginViewModel (Java path, new implementation)
+        val ktorAuthService = remember { KtorAuthServiceImpl() }
+        val tokenStorage = remember { TokenStorage(application) }
+        
         val owner = LocalSavedStateRegistryOwner.current
-        // Get default arguments from the activity's intent (can be null)
         val activity = (LocalContext.current as? ComponentActivity)
         val defaultArgs = activity?.intent?.extras
 
         val emailAuthViewModel: EmailAuthViewModel = viewModel(
-            factory = EmailAuthViewModel.provideFactory(authService, owner, defaultArgs)
+            factory = EmailAuthViewModel.provideFactory(
+                authService = oldAuthService, // Pass the OLD authService
+                owner = owner,
+                defaultArgs = defaultArgs
+            )
         )
-
-        val loginViewModel: LoginViewModel = viewModel()
+        
+        val loginViewModel: LoginViewModel = viewModel(
+            factory = LoginViewModel.provideFactory(
+                application = application,
+                authService = ktorAuthService, // Pass the NEW Ktor-based authService
+                tokenStorage = tokenStorage,
+                owner = owner,
+                defaultArgs = defaultArgs
+            )
+        )
         val snackbarHostState = remember { SnackbarHostState() }
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 

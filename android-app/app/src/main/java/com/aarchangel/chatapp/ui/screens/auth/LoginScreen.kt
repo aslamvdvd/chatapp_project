@@ -2,6 +2,7 @@ package com.aarchangel.chatapp.ui.screens.auth
 
 // ChatApp by aarchangel
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -13,12 +14,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aarchangel.chatapp.ui.components.AppButton
 import com.aarchangel.chatapp.ui.components.AppTextField
@@ -32,16 +35,21 @@ import com.aarchangel.chatapp.viewmodel.LoginViewModel
  *
  * @param loginViewModel The ViewModel handling the login logic.
  * @param onNavigateBack Lambda to call when the back button is pressed.
+ * @param onNavigateToSignUp Lambda to call to navigate to the sign-up screen.
+ * @param onNavigateToForgotPassword Lambda to call to navigate to the forgot password screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     loginViewModel: LoginViewModel = viewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToSignUp: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit
 ) {
     val uiState by loginViewModel.uiState.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
     var passwordVisible by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -116,14 +124,15 @@ fun LoginScreen(
                     text = currentLoginError,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = Dimens.PaddingExtraSmall)
+                    modifier = Modifier.padding(top = Dimens.PaddingExtraSmall, bottom = Dimens.PaddingSmall)
                 )
+            } else {
+                Spacer(modifier = Modifier.height(Dimens.PaddingMedium + Dimens.PaddingExtraSmall))
             }
-
-            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
 
             if (uiState.isLoading) {
                 CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
             } else {
                 AppButton(
                     text = "Log In",
@@ -134,6 +143,25 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+
+            TextButton(onClick = onNavigateToForgotPassword) {
+                Text("Forgot Password?")
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Don't have an account?")
+                Spacer(modifier = Modifier.width(4.dp))
+                TextButton(onClick = onNavigateToSignUp) {
+                    Text("Sign Up")
+                }
+            }
         }
     }
 }
@@ -142,7 +170,11 @@ fun LoginScreen(
 @Composable
 fun LoginScreenPreview() {
     ChatAppTheme {
-        LoginScreen(onNavigateBack = {})
+        LoginScreen(
+            onNavigateBack = {},
+            onNavigateToSignUp = {},
+            onNavigateToForgotPassword = {}
+        )
     }
 }
 
@@ -150,7 +182,11 @@ fun LoginScreenPreview() {
 @Composable
 fun LoginScreenDarkPreview() {
     ChatAppTheme(darkTheme = true) {
-        LoginScreen(onNavigateBack = {})
+        LoginScreen(
+            onNavigateBack = {},
+            onNavigateToSignUp = {},
+            onNavigateToForgotPassword = {}
+        )
     }
 }
 
@@ -158,6 +194,10 @@ fun LoginScreenDarkPreview() {
 @Composable
 fun LoginScreenTabletPreview() {
     ChatAppTheme {
-        LoginScreen(onNavigateBack = {})
+        LoginScreen(
+            onNavigateBack = {},
+            onNavigateToSignUp = {},
+            onNavigateToForgotPassword = {}
+        )
     }
-} 
+}

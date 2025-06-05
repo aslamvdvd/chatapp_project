@@ -2,8 +2,20 @@ package com.aarchangel.chatapp.viewmodel
 
 // ChatApp by aarchangel
 
+import android.app.Application
+import android.os.Bundle
+import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.savedstate.SavedStateRegistryOwner
+import com.aarchangel.chatapp.data.TokenStorage // Assuming TokenStorage is in this path
+import com.aarchangel.chatapp.dto.LoginRequest // DTO from the kotlin path
+import com.aarchangel.chatapp.network.AuthService // Ktor AuthService from the kotlin path
+import com.aarchangel.chatapp.network.NetworkResult // Ktor NetworkResult from the kotlin path
+import com.aarchangel.chatapp.navigation.AppScreen // For navigation routes
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -26,12 +38,18 @@ data class LoginUiState(
  * Handles UI state, validation, and login attempts.
  * // ChatApp by aarchangel
  */
-class LoginViewModel : ViewModel() {
+class LoginViewModel(
+    application: Application, // Added Application for context
+    private val authService: AuthService, // Ktor AuthService
+    private val tokenStorage: TokenStorage // TokenStorage
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableSharedFlow<String>() // For future use (e.g., navigate to home)
+    // Using AppScreen.EmailAuth.route as a placeholder for a dashboard/home screen route
+    // You should define a proper route in AppScreen.kt like AppScreen.Dashboard.route
+    private val _navigationEvent = MutableSharedFlow<String>() 
     val navigationEvent = _navigationEvent.asSharedFlow()
 
     private val _snackbarMessage = MutableSharedFlow<String>()
@@ -50,24 +68,68 @@ class LoginViewModel : ViewModel() {
     /** Attempts to log in the user. */
     fun onLoginClicked() {
         val state = _uiState.value
-        if (state.emailOrUsername.isBlank() || state.password.isBlank()) {
-            _uiState.update { it.copy(loginError = "Email/Username and password cannot be empty.") }
+        if (state.emailOrUsername.isBlank()) {
+            _uiState.update { it.copy(loginError = "Email/Username cannot be empty.") }
+            return
+        }
+        if (state.password.isBlank()) {
+            _uiState.update { it.copy(loginError = "Password cannot be empty.") }
             return
         }
 
-        _uiState.update { it.copy(isLoading = true) }
-        // Placeholder for actual login logic
+        _uiState.update { it.copy(isLoading = true, loginError = null) }
+        
         viewModelScope.launch {
-            kotlinx.coroutines.delay(1500) // Simulate network request
-            _uiState.update { it.copy(isLoading = false) }
-            // Mock success/failure
-            if ((state.emailOrUsername == "test@example.com" || state.emailOrUsername == "testuser") && state.password == "password") {
-                _snackbarMessage.emit("Login successful for ${state.emailOrUsername}")
-                // TODO: Navigate to Home/Main screen
-                // _navigationEvent.emit(AppScreen.HomeScreen.route) // Example
-            } else {
-                _snackbarMessage.emit("Login failed. Invalid credentials.")
-                _uiState.update { it.copy(loginError = "Invalid email/username or password.") }
+            val loginRequest = LoginRequest(emailOrUsername = state.emailOrUsername, password = state.password)
+            when (val result = authService.login(loginRequest)) {
+                is NetworkResult.Success -> {
+                    tokenStorage.saveToken(result.data.accessToken)
+                    _uiState.update { it.copy(isLoading = false, emailOrUsername = "", password = "") } // Clear both fields
+                    _snackbarMessage.emit("Login successful!")
+                    _navigationEvent.emit(AppScreen.EmailAuth.route) // TODO: Replace with actual Dashboard/Home route
+                }
+                is NetworkResult.Error.Unauthorized -> {
+                    _uiState.update { it.copy(isLoading = false, loginError = result.message ?: "Invalid credentials.") }
+                    _snackbarMessage.emit(result.message ?: "Invalid credentials.")
+                }
+                is NetworkResult.Error.BadRequest -> {
+                    _uiState.update { it.copy(isLoading = false, loginError = result.message ?: "Invalid input.") }
+                     _snackbarMessage.emit(result.message ?: "Invalid input.")
+                }
+                is NetworkResult.Error.ServerError -> {
+                    _uiState.update { it.copy(isLoading = false, loginError = result.message ?: "Server error.") }
+                    _snackbarMessage.emit(result.message ?: "Server error. Please try again later.")
+                }
+                is NetworkResult.Error.NetworkError -> {
+                    _uiState.update { it.copy(isLoading = false, loginError = result.message ?: "Network connection failed.") }
+                    _snackbarMessage.emit(result.message ?: "Network connection failed. Check your internet.")
+                }
+                is NetworkResult.Error.UnknownError -> {
+                    _uiState.update { it.copy(isLoading = false, loginError = result.message ?: "An unknown error occurred.") }
+                    _snackbarMessage.emit(result.message ?: "An unknown error occurred.")
+                }
+            }
+        }
+    }
+
+    companion object {
+        fun provideFactory(
+            application: Application,
+            authService: AuthService, // Ktor AuthService
+            tokenStorage: TokenStorage,
+            owner: SavedStateRegistryOwner,
+            defaultArgs: Bundle? = null
+        ): ViewModelProvider.Factory = object : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(
+                key: String,
+                modelClass: Class<T>,
+                handle: SavedStateHandle
+            ): T {
+                if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
+                    return LoginViewModel(application, authService, tokenStorage) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
         }
     }
