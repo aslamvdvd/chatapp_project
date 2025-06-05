@@ -1,3 +1,216 @@
+commit 4f8cbfa0f53580d94399d9ee205fd0679d9f8180
+Author: Mohammad Aslam <aslammohammad336@gmail.com>
+Date:   Thu Jun 5 13:02:20 2025 +0530
+
+    feat(android): Implement secure JWT login and token storage
+    
+    This commit completes the implementation of a secure login flow for the Android application. It connects to the backend's JWT-based `/auth/login` API, handles the response, and stores the received JWT securely on the device for use in future authenticated requests.
+    
+    Key components and changes:
+    
+    1.  **API Connection & DTOs:**
+        - Integrated the Ktor-based `AuthServiceImpl` into `LoginViewModel` to handle HTTP requests to the `/auth/login` endpoint.
+        - Ensured `LoginRequest` DTO (`dto/AuthDto.kt`) uses `@SerialName("email_or_username")` for correct JSON serialization, matching backend expectations.
+        - `LoginResponse` DTO is used to deserialize the `accessToken` and `tokenType` from the backend.
+    
+    2.  **JWT Secure Storage:**
+        - Implemented `TokenStorage.kt` using `EncryptedSharedPreferences` and `MasterKeys` to provide secure on-device storage for the JWT.
+        - `LoginViewModel` now utilizes `TokenStorage` to save the `accessToken` upon successful authentication.
+    
+    3.  **ViewModel Logic (`LoginViewModel.kt`):**
+        - Refactored `LoginViewModel` to be an `AndroidViewModel` and accept `Application`, the Ktor-based `AuthService`, and `TokenStorage` via a constructor and a `ViewModelProvider.Factory`.
+        - Implemented the core login logic in `onLoginClicked()`:
+            - Validates user input (email/username and password).
+            - Calls `authService.login()` with the credentials.
+            - Processes `NetworkResult` (Success, Unauthorized, BadRequest, ServerError, etc.) to update `LoginUiState` with appropriate loading indicators, error messages for the UI, or success feedback.
+            - On successful login:
+                - Saves the token using `tokenStorage.saveToken()`.
+                - Clears sensitive input fields (`emailOrUsername`, `password`) from the UI state.
+                - Emits a snackbar message for success.
+                - Emits a navigation event (placeholder for navigating to a dashboard/home screen).
+        - Updated `MainActivity.kt` to instantiate `LoginViewModel` using its new factory and provide the necessary dependencies (Ktor `AuthServiceImpl`, `TokenStorage`, and `Application` context).
+    
+    4.  **UI Feedback (`LoginScreen.kt`):**
+        - Enhanced `LoginScreen.kt` (user's original Java-path version) to:
+            - Observe `LoginUiState.isLoading` to show/hide a `CircularProgressIndicator`.
+            - Display specific error messages from `LoginUiState.loginError`.
+            - Includes "Forgot Password?" (placeholder) and "Sign Up" navigation links.
+    
+    5.  **Error Handling & Refinements:**
+        - Resolved JSON deserialization issues for sign-up error responses by updating `ApiErrorResponse.kt` and `EmailAuthViewModel.kt` to correctly handle the backend's error structure (`Map<String, List<String>>`).
+        - Deleted the unused `ApiErrorDetail.kt`.
+        - Removed redundant/conflicting Kotlin-based UI and ViewModel files that were erroneously created (`LoginScreen.kt` and `EmailAuthViewModel.kt` in the `kotlin` source set).
+    
+    This establishes a secure and functional login mechanism, paving the way for implementing features that require user authentication by leveraging the stored JWT.
+
+commit 2c574988bc94a32832f49acea77adef171a635b5
+Author: Mohammad Aslam <aslammohammad336@gmail.com>
+Date:   Thu Jun 5 10:45:54 2025 +0530
+
+    Removed file generate_jwt_secret.rs, as it was not needed i only made it to generate jwt secret.
+
+commit 707a90284fa2b612e28801d7a3cccccf6c2036d8
+Author: Mohammad Aslam <aslammohammad336@gmail.com>
+Date:   Thu Jun 5 10:43:24 2025 +0530
+
+    feat: Implement JWT-based user login and enhance dev experience
+    
+    This commit introduces a secure JWT-based login system for users and significantly improves the development environment with robust `cargo watch` support and refined logging.
+    
+    **Authentication & Authorization (JWT):**
+    
+    *   **Login Endpoint (`POST /auth/login`):**
+        *   Added a new API endpoint for user login, accepting `email_or_username` and `password`.
+        *   On successful authentication, returns a JWT `access_token` and `token_type`.
+        *   Handles various error scenarios: 400 (validation), 401 (invalid credentials), 403 (feature disabled), 500 (server errors).
+    *   **Models (`models/auth.rs`):**
+        *   Defined `LoginRequest` DTO with input validation (`validator`).
+        *   Defined `LoginResponse` DTO to structure the JWT response.
+        *   Integrated with Utoipa for OpenAPI schema generation.
+    *   **Auth Service (`services/auth_service.rs`):**
+        *   Implemented `login_user` method:
+            *   Looks up user by email or username.
+            *   Verifies password using Argon2 (from `utils/hash.rs`).
+            *   Generates a JWT upon successful verification.
+        *   Extended `AuthServiceError` to cover login-specific errors (e.g., `UserNotFound`, `InvalidCredentials`, `JwtGeneration`).
+    *   **JWT Utility (`utils/jwt.rs`):**
+        *   Added `jsonwebtoken` crate dependency.
+        *   Implemented `generate_jwt` function: creates a token with `sub` (user_id), `role`, `exp`, and `iat` claims.
+        *   Implemented `validate_jwt` function (placeholder for future middleware use).
+        *   Defined `Claims` struct for JWT payload.
+        *   Defined `JwtError` enum for JWT-related errors, including `From<jsonwebtoken::errors::Error>`.
+        *   Defined `AuthenticatedUser` struct (placeholder for future extractor).
+        *   Added unit tests for JWT generation and validation logic.
+    *   **Auth Handler (`handlers/auth_handler.rs`):**
+        *   Implemented `login_handler`:
+            *   Checks `FEATURE_LOGIN_ENABLED` feature flag.
+            *   Validates `LoginRequest` DTO.
+            *   Calls `AuthService::login_user`.
+            *   Maps `AuthServiceError` and `JwtError` to `ApiError` for HTTP responses.
+        *   Updated `ApiError` and its `From<AuthServiceError>` implementation to include new error types.
+        *   Added `From<JwtError> for ApiError` implementation.
+    *   **Routing (`routes/auth.rs`):**
+        *   Added the `/auth/login` route.
+    *   **OpenAPI (`main.rs`):**
+        *   Added `LoginRequest`, `LoginResponse` to OpenAPI components.
+        *   Included `login_handler` in OpenAPI paths.
+    *   **Environment Configuration:**
+        *   Added `JWT_SECRET` and `JWT_EXPIRY_MINUTES` to `.env.template`.
+        *   Ensured these are passed to the Docker container.
+    *   **Feature Flag:**
+        *   Added `FEATURE_LOGIN_ENABLED` to `core/feature_flags.rs` and `.env.template`.
+    
+    **Development Experience & Logging:**
+    
+    *   **Dockerized `cargo watch`:**
+        *   Configured `cargo watch` in `docker-compose.yml` for live reloading during development.
+        *   Installed `cargo-watch` in the `Dockerfile`.
+        *   Refined `cargo watch` command to:
+            *   Specifically watch `src/` and `Cargo.toml`.
+            *   Ignore the `target/` directory to prevent rebuild loops.
+            *   Use `stdbuf -oL` and `sh -c` to ensure Actix application logs (via `tracing`) are correctly streamed to the `docker compose` console output.
+        *   Added `coreutils` to `Dockerfile` for `stdbuf`.
+    *   **Logging Configuration (`logging.rs`):**
+        *   Adjusted the `EnvFilter` logic for the console logging layer.
+        *   Ensured that `RUST_LOG` settings (e.g., `user_events=debug`) correctly control the verbosity of specific targets on the console, allowing for better debugging of features like login error handling.
+        *   File-based JSON logging for `system_events`, `user_events`, and `admin_events` remains active.
+    *   **Code Quality:**
+        *   Used `cargo fix --allow-dirty` to resolve unused import warnings identified during `cargo watch` setup.
+    
+    **Build & System:**
+    
+    *   Resolved various compilation errors throughout the implementation process, including import issues, type mismatches, and macro usage.
+    *   Ensured the backend service starts successfully with `docker compose up --build`.
+    
+    This comprehensive update provides a foundational piece of the authentication system and makes the development feedback loop much smoother and more informative.
+
+commit b02c22dae47da92344b03f934793e02f54b67b95
+Author: Mohammad Aslam <aslammohammad336@gmail.com>
+Date:   Wed Jun 4 18:44:44 2025 +0530
+
+    Fix: Resolve backend Docker build and runtime issues
+    
+    This commit addresses several issues that prevented the backend Docker
+    container from building and running correctly, and ensures the Actix
+    server binds to the correct interface for external accessibility.
+    
+    - Dockerfile:
+        - Updated Rust builder image to `rust:slim` and consistently use it.
+        - Resolved `libssl.so.3` missing library error in the runtime
+          container by:
+            - Identifying that `rust:slim` (builder) links against `libssl.so.3`.
+            - Changing the runtime base image from `debian:bullseye-slim`
+              to `debian:bookworm-slim` (which provides `libssl3`).
+            - Installing `libssl3` and `ca-certificates` in the
+              `debian:bookworm-slim` runtime stage.
+        - Corrected COPY command for the compiled binary name to match
+          `Cargo.toml` (`chatapp_by_aarchangel_backend`).
+        - Ensured `CMD` in Dockerfile uses the correct binary name.
+    - Docker Compose:
+        - Resolved port conflict for `ghosttalk_db` by mapping host port 5433
+          to container port 5432.
+        - Commented out `command: ["cargo", "watch", ...]` in `docker-compose.yml`
+          for the backend service, allowing the Dockerfile's `CMD` to take
+          precedence for production-style runs.
+        - Addressed `KeyError: 'ContainerConfig'` by using `docker compose down --volumes`
+          and switching to Docker Compose V2 (`docker compose`) for more robust
+          state management.
+    - Backend (Rust/Actix):
+        - Changed default Actix server host binding in `backend/src/main.rs`
+          from `127.0.0.1` to `0.0.0.0`. This allows the server running
+          inside Docker to accept connections from outside the container
+          (e.g., from the Android app via port mapping).
+    
+    Feature: Implement initial Android email signup API integration
+    
+    This commit introduces the necessary components and logic in the Android
+    application to connect to the backend's signup API.
+    
+    - Android Networking & DTOs:
+        - Added Ktor client dependencies and Kotlinx Serialization for API communication.
+        - Created `SignUpRequest`, `ApiErrorDetail`, and `ApiErrorResponse` DTOs.
+        - Implemented `AuthService` and `AuthServiceImpl` using Ktor to make
+          the POST request to `/auth/signup`.
+        - Added `BuildConfig.API_URL` and configured `buildFeatures.buildConfig = true`.
+        - Added `android.permission.INTERNET` to `AndroidManifest.xml`.
+    - ViewModel & UI:
+        - Integrated `AuthService.signUp()` call into `EmailAuthViewModel.onSignUpAttempt()`.
+        - Handles API success (clears form, shows snackbar) and failure
+          (updates UI with field-specific or general errors from API response).
+        - Formats `dateOfBirth` from "DD-MM-YYYY" to "YYYY-MM-DD" for API.
+        - Updated `EmailSignUpScreen` button text to "Create Account".
+    
+    Fix: Resolve Android app crashes related to ViewModel and HTTP
+    
+    - ViewModel Instantiation:
+        - Fixed `NoSuchMethodException` for `EmailAuthViewModel` by:
+            - Creating a `ViewModelProvider.Factory` (companion object `provideFactory`
+              in `EmailAuthViewModel`) using `AbstractSavedStateViewModelFactory`
+              to correctly provide `SavedStateHandle` and `AuthService`.
+            - Updating `MainActivity.kt` to use this factory when
+              instantiating `EmailAuthViewModel`.
+    - Cleartext HTTP Traffic:
+        - Added `android:usesCleartextTraffic="true"` to the `<application>` tag
+          in `AndroidManifest.xml` to allow the app to connect to the local
+          HTTP backend (e.g., `http://192.168.x.x:8080`).
+    
+    Chore: Update Gradle dependencies and project versions
+    
+    - Updated Compose BOM, Kotlin Compiler Extension, Material3, Core KTX,
+      Lifecycle KTX, and project Kotlin plugin version to resolve DatePicker
+      component issues and maintain compatibility.
+    - Resolved various `buildConfigField` syntax and feature enablement
+      issues in `app/build.gradle.kts`.
+    
+    Refactor: Consolidate signup flow and improve UI/UX
+    
+    - Simplified signup flow to a single `EmailSignUpScreen` after `AuthOptionsScreen`.
+    - Renamed `CreateAccountDetailsScreen` to `EmailSignUpScreen` and updated
+      associated ViewModels, navigation routes (`AppScreen.kt`), and composables.
+    - Implemented form clearing on navigation and successful signup.
+    - Added manual Date of Birth input with auto-hyphenation using
+      `DateVisualTransformation` and refined associated ViewModel logic.
+
 commit 2599710a7bb7d617657c3118723a6fe1a9a11e64
 Author: Mohammad Aslam <aslammohammad336@gmail.com>
 Date:   Wed Jun 4 16:22:55 2025 +0530
