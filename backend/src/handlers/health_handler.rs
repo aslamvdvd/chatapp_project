@@ -1,5 +1,4 @@
 use actix_web::{web::Data, HttpResponse, Responder};
-use serde_json::json;
 use utoipa; // Required for the path macro attribute
 
 use crate::core::app_state::AppState; // For db_health_check

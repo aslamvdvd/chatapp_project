@@ -1,5 +1,4 @@
 use actix_web::{HttpResponse, Responder};
-use serde_json::json;
 use utoipa;
 
 // TODO: Add RBAC checks to admin handlers using `crate::core::rbac::require_role`

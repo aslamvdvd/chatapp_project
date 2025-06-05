@@ -67,7 +67,11 @@ pub fn init_logging() -> Result<(WorkerGuard, WorkerGuard, WorkerGuard), Error> 
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")); // Default to info if RUST_LOG is not set
     let console_layer = tracing_subscriber::fmt::layer()
         .with_writer(std::io::stdout)
-        .with_filter(console_layer_filter_excluding_custom_targets());
+        .with_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("info")) // Default to info if RUST_LOG is not set
+                .add_directive("sqlx=warn".parse().unwrap()), // Ensure sqlx is at least warn
+        );
 
     // Combine layers and initialize the global subscriber
     tracing_subscriber::registry()
@@ -86,12 +90,10 @@ pub fn init_logging() -> Result<(WorkerGuard, WorkerGuard, WorkerGuard), Error> 
     Ok((system_guard, user_guard, admin_guard))
 }
 
-/// Creates an EnvFilter for the console layer that excludes custom targets
-/// to prevent duplicate logging to console if those targets are also captured by file layers.
-fn console_layer_filter_excluding_custom_targets() -> EnvFilter {
+/* fn console_layer_filter_excluding_custom_targets() -> EnvFilter {
     EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("info"))
         .add_directive("system_events=off".parse().unwrap()) // Turn off system_events for console
         .add_directive("user_events=off".parse().unwrap()) // Turn off user_events for console
         .add_directive("admin_events=off".parse().unwrap()) // Turn off admin_events for console
-}
+} */

@@ -20,6 +20,9 @@ dotenvy = "0.15"
 thiserror = "1.0" # Added for custom error handling
 utoipa = { version = "4.0", features = ["actix_extras", "chrono", "uuid"] } # Updated version and features
 utoipa-swagger-ui = { version = "4.0", features = ["actix-web"] } # Corrected feature name
+base64 = "0.22" # Or the latest version
+
+jsonwebtoken = "9" # For JWT handling
 
 # Logging dependencies
 tracing = "0.1"

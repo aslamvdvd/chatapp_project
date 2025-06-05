@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   db:
@@ -24,6 +24,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: builder
     container_name: ghosttalk_backend
     depends_on:
       db:
@@ -31,13 +32,19 @@ services:
     ports:
       - "${PORT:-8080}:8080"
     volumes:
-      - ./backend:/usr/src/app 
+      - ./backend:/usr/src/app
+      - cargo_registry_cache:/usr/local/cargo/registry
+      - cargo_git_cache:/usr/local/cargo/git
+      - cargo_target_cache:/usr/src/app/target
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      RUST_LOG: "actix_web=info,info"
-      # For development with cargo-watch, ensure cargo-watch is in your Docker image's PATH
-      # and uncomment the following. You might need a custom Dockerfile stage for dev.
-    # command: ["cargo", "watch", "-q", "-c", "-w", "./src", "-x", "run", "--", "--host", "0.0.0.0"]
+      RUST_LOG: "actix_web=debug,chatapp_by_aarchangel_backend=debug,sqlx=warn,system_events=info,user_events=debug,admin_events=debug,jsonwebtoken=info"
+      RUST_BACKTRACE: "1"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES}
+      FEATURE_SIGNUP_ENABLED: ${FEATURE_SIGNUP_ENABLED:-true}
+      FEATURE_LOGIN_ENABLED: ${FEATURE_LOGIN_ENABLED:-true}
+    command: ["cargo", "watch", "-c", "-w", "src", "-w", "Cargo.toml", "--poll", "--delay", "1", "-s", "sh -c 'stdbuf -oL cargo run --bin chatapp_by_aarchangel_backend'"]
     restart: unless-stopped
     labels:
       - "com.ghosttalk.description=GhostTalk Backend API"
@@ -45,4 +52,10 @@ services:
 
 volumes:
   pgdata:
+    driver: local
+  cargo_registry_cache:
+    driver: local
+  cargo_git_cache:
+    driver: local
+  cargo_target_cache:
     driver: local 

@@ -6,6 +6,7 @@ use std::str::FromStr;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Feature {
     SignupEnabled,
+    LoginEnabled, // Added for login feature
     LoggingVerbose, // Example: For more detailed logging if enabled
     EnableExperimentalApi, // Example: To toggle a new set of APIs
                     // Add more features as needed
@@ -17,6 +18,7 @@ impl FromStr for Feature {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "signupenabled" => Ok(Feature::SignupEnabled),
+            "loginenabled" => Ok(Feature::LoginEnabled), // Added for login
             "loggingverbose" => Ok(Feature::LoggingVerbose),
             "enableexperimentalapi" => Ok(Feature::EnableExperimentalApi),
             _ => Err(format!("Unknown feature: {}", s)),
@@ -32,6 +34,7 @@ impl FromStr for Feature {
 pub struct FeatureFlags {
     // Using specific fields for type safety and direct access
     pub signup_enabled: bool,
+    pub login_enabled: bool, // Added for login
     pub logging_verbose: bool,
     pub enable_experimental_api: bool,
     // Add fields for other features
@@ -48,6 +51,11 @@ impl FeatureFlags {
             .and_then(|val| val.parse::<bool>().ok())
             .unwrap_or(true); // Default to true for signup for now
 
+        let login_enabled = env::var("FEATURE_LOGIN_ENABLED")
+            .ok()
+            .and_then(|val| val.parse::<bool>().ok())
+            .unwrap_or(true); // Default to true for login for now
+
         let logging_verbose = env::var("FEATURE_LOGGING_VERBOSE")
             .ok()
             .and_then(|val| val.parse::<bool>().ok())
@@ -61,6 +69,7 @@ impl FeatureFlags {
         tracing::info!(
             target: "system_events",
             feature_signup_enabled = signup_enabled,
+            feature_login_enabled = login_enabled, // Added for login
             feature_logging_verbose = logging_verbose,
             feature_enable_experimental_api = enable_experimental_api,
             "Feature flags loaded"
@@ -68,6 +77,7 @@ impl FeatureFlags {
 
         Self {
             signup_enabled,
+            login_enabled, // Added for login
             logging_verbose,
             enable_experimental_api,
         }
@@ -78,6 +88,7 @@ impl FeatureFlags {
     pub fn is_enabled(&self, feature: Feature) -> bool {
         match feature {
             Feature::SignupEnabled => self.signup_enabled,
+            Feature::LoginEnabled => self.login_enabled, // Added for login
             Feature::LoggingVerbose => self.logging_verbose,
             Feature::EnableExperimentalApi => self.enable_experimental_api,
         }
@@ -88,6 +99,7 @@ impl FeatureFlags {
 Expected .env keys for feature flags:
 
 FEATURE_SIGNUP_ENABLED=true
+FEATURE_LOGIN_ENABLED=true
 FEATURE_LOGGING_VERBOSE=false
 FEATURE_ENABLE_EXPERIMENTAL_API=false
 

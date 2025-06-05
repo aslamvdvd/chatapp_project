@@ -1,6 +1,6 @@
 use actix_web::{
     web::{self, Data},
-    App, HttpResponse, HttpServer, Responder,
+    App, HttpServer,
 };
 use dotenvy::dotenv;
 use std::env;
@@ -24,6 +24,9 @@ use crate::routes::auth::configure_auth_routes;
 use crate::routes::admin_routes::configure_admin_routes;
 use crate::services::auth_service::AuthService;
 use crate::handlers::health_handler::{health_check, db_health_check};
+
+// Import login models for OpenAPI
+use crate::models::auth::{LoginRequest, LoginResponse};
 
 // For OpenAPI/Swagger documentation
 use utoipa::OpenApi;
@@ -88,12 +91,20 @@ async fn main() -> std::io::Result<()> {
     #[openapi(
         paths(
             crate::handlers::auth_handler::signup_handler,
+            crate::handlers::auth_handler::login_handler,
             crate::handlers::health_handler::health_check,
             crate::handlers::health_handler::db_health_check,
             crate::handlers::admin_handler::admin_root_handler
         ),
         components(
-            schemas(crate::models::user::SignupUserDto, crate::models::user::UserPublicData, crate::handlers::auth_handler::ApiError, crate::core::rbac::Role)
+            schemas(
+                crate::models::user::SignupUserDto, 
+                crate::models::user::UserPublicData, 
+                crate::handlers::auth_handler::ApiError, 
+                crate::core::rbac::Role,
+                LoginRequest, 
+                LoginResponse
+            )
         ),
         tags(
             (name = "chatapp_by_aarchangel_backend", description = "ChatApp by aarchangel - Backend API"),
