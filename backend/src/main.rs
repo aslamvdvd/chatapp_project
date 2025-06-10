@@ -1,12 +1,14 @@
-use actix_web::{
-    web::{self, Data},
-    App, HttpServer,
-};
+use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenvy::dotenv;
 use std::env;
-use std::sync::Arc;
+use utoipa::{
+    openapi::security::{Http, HttpAuthScheme, SecurityScheme},
+    Modify, OpenApi,
+};
+use utoipa_swagger_ui::SwaggerUi;
 
-// Modules
+// Module declarations
+pub mod config;
 pub mod core;
 pub mod db;
 pub mod handlers;
@@ -16,145 +18,102 @@ pub mod routes;
 pub mod services;
 pub mod utils;
 
-// Use statements for services and routes
 use crate::core::app_state::AppState;
 use crate::core::feature_flags::FeatureFlags;
+use crate::handlers::health_handler::{db_health_check, health_check};
 use crate::logging::init_logging;
-use crate::routes::auth::configure_auth_routes;
 use crate::routes::admin_routes::configure_admin_routes;
+use crate::routes::auth::configure_auth_routes;
 use crate::services::auth_service::AuthService;
-use crate::handlers::health_handler::{health_check, db_health_check};
-
-// Import login models for OpenAPI
-use crate::models::auth::{LoginRequest, LoginResponse};
-
-// For OpenAPI/Swagger documentation
-use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
 
 /// Main function to set up and run the Actix web server.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Load environment variables from .env file
     dotenv().ok();
+    let _ = init_logging();
 
-    // Initialize logging FIRST
-    let (_system_log_guard, _user_log_guard, _admin_log_guard) = init_logging()
-        .expect("Failed to initialize logging. Ensure 'logs' directory can be created.");
-
-    // Replace previous println! with tracing::info!
-    tracing::info!(target: "system_events", "Starting chatapp_by_aarchangel backend server...");
-
-    // Create database connection pool
-    let db_pool = match db::create_pool().await {
-        Ok(pool) => {
-            tracing::info!(target: "system_events", "Database pool created successfully.");
-            pool
-        }
-        Err(e) => {
-            tracing::error!(target: "system_events", error = %e, "Failed to create database pool. Ensure DB is running and DATABASE_URL is set.");
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                e.to_string(),
-            ));
-        }
-    };
-
-    // Initialize FeatureFlags (will be defined in the next step)
-    let feature_flags = Arc::new(FeatureFlags::from_env());
-
-    // Run SQLx migrations
-    tracing::info!(target: "system_events", "Applying database migrations...");
-    match sqlx::migrate!("./migrations") // Path relative to CARGO_MANIFEST_DIR
-        .run(&db_pool)
+    let db_pool = crate::db::create_pool()
         .await
-    {
+        .expect("Failed to create database pool.");
+
+    tracing::info!(target: "system_events", "Applying database migrations...");
+    match sqlx::migrate!("./migrations").run(&db_pool).await {
         Ok(_) => {
             tracing::info!(target: "system_events", "Database migrations applied successfully.")
         }
         Err(e) => {
             tracing::error!(target: "system_events", error = %e, "Failed to apply database migrations.");
-            // Depending on the error, you might want to exit here.
-            // For now, we log and continue, but in production, this could be a fatal error.
+            // In production, you might want to exit here.
         }
     }
 
-    // Create the new AppState
-    let app_state = Data::new(AppState::new(db_pool.clone(), feature_flags.clone()));
+    let feature_flags = FeatureFlags::from_env();
+    let app_state = AppState::new(db_pool.clone(), feature_flags.into());
+    let auth_service_data = Data::new(AuthService::new(db_pool.clone()));
 
-    // Initialize services - they might take AppState or specific parts like PgPool
-    // For now, AuthService takes PgPool directly. If it needed AppState, it would be passed here.
-    let auth_service_data = Data::new(AuthService::new(db_pool.clone())); // AuthService still takes PgPool directly
-
-    // OpenAPI documentation setup
     #[derive(OpenApi)]
     #[openapi(
         paths(
             crate::handlers::auth_handler::signup_handler,
             crate::handlers::auth_handler::login_handler,
+            crate::handlers::auth_handler::me_handler,
             crate::handlers::health_handler::health_check,
             crate::handlers::health_handler::db_health_check,
             crate::handlers::admin_handler::admin_root_handler
         ),
         components(
             schemas(
-                crate::models::user::SignupUserDto, 
-                crate::models::user::UserPublicData, 
-                crate::handlers::auth_handler::ApiError, 
+                crate::models::user::SignupUserDto,
+                crate::models::user::UserPublicData,
+                crate::models::user::UserInfoResponse,
+                crate::handlers::auth_handler::ApiError,
                 crate::core::rbac::Role,
-                LoginRequest, 
-                LoginResponse
+                crate::models::auth::LoginRequest,
+                crate::models::auth::LoginResponse
             )
         ),
         tags(
-            (name = "chatapp_by_aarchangel_backend", description = "ChatApp by aarchangel - Backend API"),
-            (name = "Health", description = "Health Check Operations"),
-            (name = "Admin", description = "Admin Operations")
+            (name = "auth", description = "Authentication endpoints"),
+            (name = "health", description = "Health check endpoints"),
+            (name = "admin", description = "Admin-only endpoints")
         ),
-        info(
-            title = "ChatApp by aarchangel - Backend API",
-            version = "0.1.0",
-            description = "API for GhostTalk (ChatApp by aarchangel)",
-            contact(
-                name = "Support",
-                email = "support@example.com"
-            )
-        )
+        modifiers(&SecurityAddon)
     )]
     struct ApiDoc;
 
+    struct SecurityAddon;
+
+    impl Modify for SecurityAddon {
+        fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+            let components = openapi.components.get_or_insert_with(Default::default);
+            components.add_security_scheme(
+                "bearer_auth",
+                SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)),
+            )
+        }
+    }
+
     let openapi = ApiDoc::openapi();
 
-    let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
-    let port = env::var("PORT")
+    let port: u16 = env::var("PORT")
         .unwrap_or_else(|_| "8080".to_string())
-        .parse::<u16>()
-        .map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                format!("Invalid PORT number: {}", e),
-            )
-        })?;
-
-    tracing::info!(target: "system_events", host = %host, port = %port, "Server starting...");
-    tracing::info!(target: "system_events", swagger_ui_path = format!("http://{}:{}/swagger-ui/", host, port), "Swagger UI available for chatapp_by_aarchangel API");
+        .parse()
+        .expect("PORT must be a valid u16");
 
     HttpServer::new(move || {
         App::new()
-            .app_data(app_state.clone()) // Pass the new AppState
-            .app_data(auth_service_data.clone()) // AuthService still passed directly for now
-            // If AuthService used AppState, this direct injection might be removed
-            // or AuthService could be retrieved from AppState in handlers.
-            .wrap(tracing_actix_web::TracingLogger::default())
-            .configure(configure_auth_routes)
-            .configure(configure_admin_routes)
-            .service(web::resource("/health").route(web::get().to(health_check)))
-            .service(web::resource("/health/db").route(web::get().to(db_health_check)))
+            .app_data(Data::new(app_state.clone()))
+            .app_data(auth_service_data.clone())
+            .wrap(Logger::default())
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-doc/openapi.json", openapi.clone()),
             )
+            .configure(configure_auth_routes)
+            .configure(configure_admin_routes)
+            .service(health_check)
+            .service(db_health_check)
     })
-    .bind((host, port))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }

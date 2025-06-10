@@ -45,6 +45,11 @@ sealed class AppScreen(val route: String) {
         fun createRoute(flowType: String) = "email_signup/$flowType"
     }
 
+    /**
+     * Represents the user's profile screen, shown after successful login.
+     */
+    object ProfileScreen : AppScreen("profile")
+
     // Add other screens here as the app grows
     // Example: object HomeScreen : AppScreen("home")
     // Example: object ChatScreen : AppScreen("chat/{chatId}") {

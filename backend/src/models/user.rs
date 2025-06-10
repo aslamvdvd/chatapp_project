@@ -119,6 +119,29 @@ pub struct UserPublicData {
     pub created_at: DateTime<Utc>,
 }
 
+/// Represents the data returned for an authenticated user's profile.
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    "email": "user@example.com",
+    "username": "exampleuser",
+    "first_name": "Example",
+    "middle_name": "OptionalMiddle",
+    "last_name": "User",
+    "created_at": "2023-10-27T10:30:00Z"
+}))]
+pub struct UserInfoResponse {
+    #[schema(format = "uuid")]
+    pub id: Uuid,
+    pub email: String,
+    pub username: String,
+    pub first_name: String,
+    pub middle_name: Option<String>,
+    pub last_name: String,
+    #[schema(format = "date-time")]
+    pub created_at: DateTime<Utc>,
+}
+
 impl From<User> for UserPublicData {
     fn from(user: User) -> Self {
         UserPublicData {
@@ -131,6 +154,20 @@ impl From<User> for UserPublicData {
             date_of_birth: user.date_of_birth.format("%Y-%m-%d").to_string(),
             gender: user.gender,
             role: user.role,
+            created_at: user.created_at,
+        }
+    }
+}
+
+impl From<User> for UserInfoResponse {
+    fn from(user: User) -> Self {
+        UserInfoResponse {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            first_name: user.first_name,
+            middle_name: user.middle_name,
+            last_name: user.last_name,
             created_at: user.created_at,
         }
     }

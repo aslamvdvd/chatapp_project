@@ -40,6 +40,7 @@ import com.aarchangel.chatapp.config.AppConfig
 import com.aarchangel.chatapp.navigation.AppScreen
 import com.aarchangel.chatapp.ui.components.SharedAppHeader
 import com.aarchangel.chatapp.ui.screens.AuthOptionsScreen
+import com.aarchangel.chatapp.ui.screens.ProfileScreen
 import com.aarchangel.chatapp.ui.screens.WelcomeScreen
 import com.aarchangel.chatapp.ui.screens.auth.EmailSignUpScreen
 import com.aarchangel.chatapp.ui.screens.auth.LoginScreen
@@ -149,7 +150,13 @@ fun ChatAppNavigation(
     // Re-add LaunchedEffects for LoginViewModel
     LaunchedEffect(loginViewModel.navigationEvent) {
         loginViewModel.navigationEvent.collect { route ->
-            navController.navigate(route)
+            navController.navigate(route) {
+                if (route == AppScreen.ProfileScreen.route) {
+                    popUpTo(AppScreen.Welcome.route) {
+                        inclusive = false
+                    }
+                }
+            }
         }
     }
 
@@ -205,6 +212,10 @@ fun ChatAppNavigation(
             // For now, let's assume it was a placeholder for a screen after successful email/password auth.
             // We should define a proper HomeScreen/DashboardScreen route later.
             // Example: Text("Dashboard Placeholder: Welcome!")
+        }
+
+        composable(route = AppScreen.ProfileScreen.route) {
+            ProfileScreen(loginViewModel = loginViewModel)
         }
 
         composable(route = AppScreen.Login.route) {

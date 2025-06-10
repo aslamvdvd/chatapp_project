@@ -1,5 +1,6 @@
 use actix_web::{web::Data, HttpResponse, Responder};
 use utoipa; // Required for the path macro attribute
+use actix_web::get;
 
 use crate::core::app_state::AppState; // For db_health_check
 use sqlx; // For db_health_check
@@ -14,6 +15,7 @@ use tracing; // For logging in db_health_check
     )
 )]
 /// Basic health check endpoint.
+#[get("/health")]
 pub async fn health_check() -> impl Responder {
     HttpResponse::Ok().body("chatapp_by_aarchangel backend is healthy!")
 }
@@ -28,6 +30,7 @@ pub async fn health_check() -> impl Responder {
     )
 )]
 /// Specific health check for the database connection.
+#[get("/health/db")]
 pub async fn db_health_check(app_state: Data<AppState>) -> impl Responder {
     match sqlx::query("SELECT 1")
         .fetch_one(&app_state.db_pool) // Ping the database

@@ -13,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.aarchangel.chatapp.data.TokenStorage // Assuming TokenStorage is in this path
 import com.aarchangel.chatapp.dto.LoginRequest // DTO from the kotlin path
+import com.aarchangel.chatapp.dto.UserProfileDto
 import com.aarchangel.chatapp.network.AuthService // Ktor AuthService from the kotlin path
 import com.aarchangel.chatapp.network.NetworkResult // Ktor NetworkResult from the kotlin path
 import com.aarchangel.chatapp.navigation.AppScreen // For navigation routes
@@ -34,6 +35,15 @@ data class LoginUiState(
 )
 
 /**
+ * UI state for the User Profile.
+ */
+data class ProfileUiState(
+    val userProfile: UserProfileDto? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+/**
  * ViewModel for the LoginScreen.
  * Handles UI state, validation, and login attempts.
  * // ChatApp by aarchangel
@@ -46,6 +56,9 @@ class LoginViewModel(
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState = _uiState.asStateFlow()
+
+    private val _profileUiState = MutableStateFlow(ProfileUiState())
+    val profileUiState = _profileUiState.asStateFlow()
 
     // Using AppScreen.EmailAuth.route as a placeholder for a dashboard/home screen route
     // You should define a proper route in AppScreen.kt like AppScreen.Dashboard.route
@@ -86,7 +99,8 @@ class LoginViewModel(
                     tokenStorage.saveToken(result.data.accessToken)
                     _uiState.update { it.copy(isLoading = false, emailOrUsername = "", password = "") } // Clear both fields
                     _snackbarMessage.emit("Login successful!")
-                    _navigationEvent.emit(AppScreen.EmailAuth.route) // TODO: Replace with actual Dashboard/Home route
+                    loadProfile() // Fetch profile after successful login
+                    _navigationEvent.emit(AppScreen.ProfileScreen.route)
                 }
                 is NetworkResult.Error.Unauthorized -> {
                     _uiState.update { it.copy(isLoading = false, loginError = result.message ?: "Invalid credentials.") }
@@ -109,6 +123,42 @@ class LoginViewModel(
                     _snackbarMessage.emit(result.message ?: "An unknown error occurred.")
                 }
             }
+        }
+    }
+
+    /** Fetches the user profile using the stored token. */
+    fun loadProfile() {
+        viewModelScope.launch {
+            val token = tokenStorage.getToken()
+            if (token == null) {
+                _profileUiState.update { it.copy(error = "User not authenticated.") }
+                _navigationEvent.emit(AppScreen.Login.route) // Redirect to login
+                return@launch
+            }
+
+            _profileUiState.update { it.copy(isLoading = true, error = null) }
+            when (val result = authService.getProfile(token)) {
+                is NetworkResult.Success -> {
+                    _profileUiState.update { it.copy(isLoading = false, userProfile = result.data) }
+                }
+                is NetworkResult.Error.Unauthorized -> {
+                    _profileUiState.update { it.copy(isLoading = false, error = "Session expired. Please log in again.") }
+                    tokenStorage.clearToken()
+                    _navigationEvent.emit(AppScreen.Login.route) // Redirect to login
+                }
+                else -> {
+                    _profileUiState.update { it.copy(isLoading = false, error = "Failed to load profile.") }
+                }
+            }
+        }
+    }
+
+    /** Clears the stored token and navigates to the login screen. */
+    fun logout() {
+        tokenStorage.clearToken()
+        _profileUiState.update { ProfileUiState() } // Reset profile state
+        viewModelScope.launch {
+            _navigationEvent.emit(AppScreen.Login.route)
         }
     }
 

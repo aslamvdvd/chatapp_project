@@ -1,17 +1,14 @@
 // Placeholder for auth_service.rs
 
 use crate::core::rbac::Role;
-use crate::models::user::{SignupUserDto, UserPublicData};
-use crate::utils::hash::hash_password;
+use crate::models::auth::{LoginRequest, LoginResponse};
+use crate::models::user::{SignupUserDto, User, UserInfoResponse, UserPublicData};
+use crate::utils::hash::{hash_password, verify_password};
+use crate::utils::jwt::{generate_jwt, JwtError};
 use chrono::{NaiveDate, Utc};
 use sqlx::PgPool;
 use std::collections::HashMap;
 use uuid::Uuid;
-
-// Added for login
-use crate::models::auth::{LoginRequest, LoginResponse};
-use crate::utils::hash::verify_password;
-use crate::utils::jwt::{generate_jwt, JwtError};
 
 /// Service layer error types.
 #[derive(Debug, thiserror::Error)]
@@ -188,39 +185,76 @@ impl AuthService {
         &self,
         login_data: LoginRequest,
     ) -> Result<LoginResponse, AuthServiceError> {
-        // 1. Find user by email or username (case-insensitive for username/email)
-        // Using LOWER() for case-insensitive comparison on email and username.
-        // Ensure that if you have separate indexes on email/username, they are created with LOWER() too,
-        // or that your database collation handles this efficiently.
-        let user_details = sqlx::query_as::<_, UserAuthDetails>(
-            "SELECT id, password_hash, role FROM users WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)"
-        )
-        .bind(&login_data.email_or_username)
-        .fetch_optional(&self.db_pool)
-        .await?;
+        // Step 1: Find the user by email or username
+        let user_details = self
+            .find_user_by_email_or_username(&login_data.email_or_username)
+            .await?;
 
-        let user = match user_details {
-            Some(u) => u,
-            None => return Err(AuthServiceError::UserNotFound),
+        // Step 2: Verify the password
+        match verify_password(&login_data.password, &user_details.password_hash) {
+            Ok(_) => (), // Password is valid
+            Err(argon2::password_hash::Error::Password) => {
+                return Err(AuthServiceError::InvalidCredentials);
+            }
+            Err(e) => {
+                // This could be a malformed hash in DB or other argon2 error
+                tracing::error!(target: "system_events", "Password verification failed with unexpected error: {}", e);
+                return Err(AuthServiceError::PasswordVerification(e.to_string()));
+            }
         };
 
-        // 2. Verify password
-        let is_password_valid = verify_password(&login_data.password, &user.password_hash);
+        // Step 3: Generate JWT
+        let token = generate_jwt(user_details.id, user_details.role)
+            .map_err(AuthServiceError::JwtGeneration)?;
 
-        if !is_password_valid {
-            // This will be triggered if the password is wrong OR if the hash_str was malformed
-            // (as verify_password returns false in that case too).
-            return Err(AuthServiceError::InvalidCredentials);
-        }
-
-        // 3. Generate JWT
-        let token = generate_jwt(user.id, user.role.clone())?; // clone role if needed by generate_jwt
-
-        // 4. Return LoginResponse
         Ok(LoginResponse {
             access_token: token,
             token_type: "Bearer".to_string(),
         })
+    }
+
+    /// Fetches a user's profile information by their ID.
+    ///
+    /// # Arguments
+    /// * `user_id` - The UUID of the user to fetch.
+    ///
+    /// # Returns
+    /// A `Result` containing the `UserInfoResponse` or an `AuthServiceError`.
+    pub async fn get_user_profile(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserInfoResponse, AuthServiceError> {
+        let user = sqlx::query_as::<_, User>(
+            "SELECT id, email, username, password_hash, first_name, middle_name, last_name, date_of_birth, gender, role, created_at, updated_at FROM users WHERE id = $1",
+        )
+        .bind(user_id)
+        .fetch_optional(&self.db_pool)
+        .await
+        .map_err(AuthServiceError::Database)?;
+
+        match user {
+            Some(u) => Ok(u.into()),
+            None => Err(AuthServiceError::UserNotFound),
+        }
+    }
+
+    /// Helper function to find a user by their email or username.
+    /// This is used internally by the login process.
+    async fn find_user_by_email_or_username(
+        &self,
+        email_or_username: &str,
+    ) -> Result<UserAuthDetails, AuthServiceError> {
+        let user_details = sqlx::query_as::<_, UserAuthDetails>(
+            "SELECT id, password_hash, role FROM users WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)"
+        )
+        .bind(email_or_username)
+        .fetch_optional(&self.db_pool)
+        .await?;
+
+        match user_details {
+            Some(u) => Ok(u),
+            None => Err(AuthServiceError::UserNotFound),
+        }
     }
 }
 

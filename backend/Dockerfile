@@ -5,7 +5,8 @@ WORKDIR /usr/src/app
 
 # Install build dependencies
 # Needed for some crates that link against C libraries (e.g., openssl-sys, some database drivers)
-RUN apt-get update && apt-get install -y libssl-dev pkg-config coreutils && rm -rf /var/lib/apt/lists/*
+# Adding `curl` for the utoipa-swagger-ui build script.
+RUN apt-get update && apt-get install -y libssl-dev pkg-config curl && rm -rf /var/lib/apt/lists/*
 
 # Install cargo-watch
 RUN cargo install cargo-watch

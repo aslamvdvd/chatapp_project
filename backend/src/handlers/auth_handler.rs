@@ -1,7 +1,8 @@
 use crate::core::app_state::AppState;
-use crate::models::user::SignupUserDto;
-use crate::models::auth::LoginRequest;
+use crate::models::auth::{LoginRequest, LoginResponse};
+use crate::models::user::{SignupUserDto, UserInfoResponse, UserPublicData};
 use crate::services::auth_service::{AuthService, AuthServiceError};
+use crate::utils::jwt::AuthenticatedUser;
 use actix_web::{
     web::{Data, Json},
     HttpResponse, ResponseError,
@@ -47,6 +48,7 @@ impl ResponseError for ApiError {
     fn error_response(&self) -> HttpResponse {
         let mut response = match self.status_code {
             400 => HttpResponse::BadRequest(),
+            401 => HttpResponse::Unauthorized(),
             403 => HttpResponse::Forbidden(),
             409 => HttpResponse::Conflict(),
             500 => HttpResponse::InternalServerError(),
@@ -323,4 +325,37 @@ pub async fn login_handler(
             Err(service_error.into())
         }
     }
+}
+
+/// Handles GET requests to `/auth/me`.
+///
+/// This is a protected endpoint that requires a valid JWT.
+/// It uses the `AuthenticatedUser` extractor to get the user's details from the token.
+/// It then fetches and returns the user's public profile information.
+///
+/// # Arguments
+/// * `user` - `AuthenticatedUser` extracted from the JWT in the `Authorization` header.
+/// * `auth_service` - `Data<AuthService>` injected by Actix for business logic.
+///
+/// # Returns
+/// An `impl Responder` which is typically an `HttpResponse`.
+#[utoipa::path(
+    get,
+    path = "/auth/me",
+    security(
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 200, description = "Current user data", body = UserInfoResponse),
+        (status = 401, description = "Unauthorized - invalid, expired, or missing token", body = ApiError),
+        (status = 404, description = "User associated with token not found", body = ApiError)
+    )
+)]
+pub async fn me_handler(
+    user: AuthenticatedUser,
+    auth_service: Data<AuthService>,
+) -> Result<HttpResponse, ApiError> {
+    tracing::info!(target: "user_events", user_id = %user.user_id, "Fetching profile for authenticated user.");
+    let user_info = auth_service.get_user_profile(user.user_id).await?;
+    Ok(HttpResponse::Ok().json(user_info))
 }

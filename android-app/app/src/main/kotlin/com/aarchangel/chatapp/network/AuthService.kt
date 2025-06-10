@@ -3,16 +3,20 @@ package com.aarchangel.chatapp.network
 import com.aarchangel.chatapp.BuildConfig
 import com.aarchangel.chatapp.dto.LoginRequest
 import com.aarchangel.chatapp.dto.LoginResponse
+import com.aarchangel.chatapp.dto.UserProfileDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -30,6 +34,7 @@ sealed class NetworkResult<out T> {
 
 interface AuthService {
     suspend fun login(request: LoginRequest): NetworkResult<LoginResponse>
+    suspend fun getProfile(token: String): NetworkResult<UserProfileDto>
 }
 
 class AuthServiceImpl : AuthService {
@@ -74,6 +79,23 @@ class AuthServiceImpl : AuthService {
             NetworkResult.Error.NetworkError("Network connection error: ${e.message}")
         } catch (e: Exception) {
             // Log.e("AuthServiceImpl", "Login failed: ${e.localizedMessage}", e) // Consider logging the exception
+            NetworkResult.Error.UnknownError("An unexpected error occurred: ${e.message}")
+        }
+    }
+
+    override suspend fun getProfile(token: String): NetworkResult<UserProfileDto> {
+        return try {
+            val response: HttpResponse = client.get("${BuildConfig.API_URL}/auth/me") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+
+            when (response.status.value) {
+                200 -> NetworkResult.Success(response.body())
+                401 -> NetworkResult.Error.Unauthorized("Unauthorized: Token is invalid or expired")
+                else -> NetworkResult.Error.UnknownError("Received status: ${response.status.value} - ${response.body<String?>()}")
+            }
+        } catch (e: Exception) {
             NetworkResult.Error.UnknownError("An unexpected error occurred: ${e.message}")
         }
     }
