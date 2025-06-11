@@ -10,7 +10,7 @@ object AppConfig {
     /** The user-facing display name of the platform. */
     const val PLATFORM_NAME = "GhostTalk"
     /** The user-facing slogan for the platform. */
-    const val PLATFORM_SLOGAN = "Private. Secure. Modern."
+    const val PLATFORM_SLOGAN = "Private. Modern. Secure."
     /** Name for one-on-one chat features. */
     const val ONE_ON_ONE_CHAT_NAME = "Private Chat"
     /** Name for group chat features. */
