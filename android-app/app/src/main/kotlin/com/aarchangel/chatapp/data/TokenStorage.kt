@@ -28,9 +28,7 @@ class TokenStorage(context: Context) {
         prefs.edit().putString(JWT_TOKEN_KEY, token).apply()
     }
 
-    fun getToken(): String? {
-        return prefs.getString(JWT_TOKEN_KEY, null)
-    }
+    fun getToken(): String? = prefs.getString(JWT_TOKEN_KEY, null)
 
     fun clearToken() {
         prefs.edit().remove(JWT_TOKEN_KEY).apply()

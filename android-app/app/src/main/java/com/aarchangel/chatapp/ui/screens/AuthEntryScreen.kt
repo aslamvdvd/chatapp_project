@@ -13,14 +13,14 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.aarchangel.chatapp.config.AppConfig
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.ui.theme.Dimens
 
 @Composable
-fun WelcomeScreen(
-    onAgreeAndContinue: () -> Unit
+fun AuthEntryScreen(
+    onNavigateToSignUp: () -> Unit,
+    onNavigateToLogin: () -> Unit,
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -47,19 +47,32 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(Dimens.PaddingHuge))
 
-            Button(onClick = onAgreeAndContinue) {
-                Text(text = "Agree and Continue")
+            Button(
+                onClick = onNavigateToSignUp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Sign Up")
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+
+            Button(
+                onClick = onNavigateToLogin,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Log In")
             }
         }
     }
 }
 
-@Preview(showBackground = true, name = "Welcome Screen")
+@Preview(showBackground = true, name = "Auth Entry Screen")
 @Composable
-fun WelcomeScreenPreview() {
+fun AuthEntryScreenPreview() {
     ChatAppTheme(darkTheme = true) {
-        WelcomeScreen(
-            onAgreeAndContinue = { Log.d("WelcomeScreen", "Agree and Continue clicked") }
+        AuthEntryScreen(
+            onNavigateToSignUp = { Log.d("AuthEntryScreen", "Sign Up clicked") },
+            onNavigateToLogin = { Log.d("AuthEntryScreen", "Log In clicked") }
         )
     }
 } 

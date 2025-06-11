@@ -4,55 +4,47 @@ package com.aarchangel.chatapp.navigation
 
 /**
  * Defines the routes for different screens in the application in a type-safe manner.
- * Each object represents a distinct screen or a screen with arguments.
+ * Each object represents a distinct screen.
  * // ChatApp by aarchangel
  */
 sealed class AppScreen(val route: String) {
+    /**
+     * Represents the Splash screen, the initial entry point of the app.
+     */
+    object Splash : AppScreen("splash")
+
     /**
      * Represents the Welcome screen.
      */
     object Welcome : AppScreen("welcome")
 
     /**
-     * Represents the Authentication Options screen.
-     * It takes a `flowType` argument (e.g., "login" or "signup").
+     * Represents the Authentication Entry screen where users choose to log in or sign up.
      */
-    object AuthOptions : AppScreen("auth_options/{flowType}") {
-        /**
-         * Creates the route for AuthOptions with a specific flow type.
-         * @param flowType The type of authentication flow (e.g., "login", "signup").
-         * @return The complete route string for navigation.
-         */
-        fun createRoute(flowType: String) = "auth_options/$flowType"
-    }
+    object AuthEntry : AppScreen("auth_entry")
 
     /**
-     * Represents the Email Authentication screen (currently a placeholder).
+     * Represents the screen where users choose their sign-up method (e.g., email, phone).
      */
-    object EmailAuth : AppScreen("email_auth")
+    object SignUpMethod : AppScreen("signup_method")
 
     /**
-     * Represents the Login screen where user enters credentials.
+     * Represents the screen where users choose their login method.
      */
-    object Login : AppScreen("login")
+    object LoginMethod : AppScreen("login_method")
 
     /**
-     * Represents the consolidated screen for new user email signup.
-     * Collects email, password, and all other user details.
-     * Takes `flowType` argument (should be "signup").
+     * Represents the form for signing up with an email and password.
      */
-    object EmailSignUpScreen : AppScreen("email_signup/{flowType}") {
-        fun createRoute(flowType: String) = "email_signup/$flowType"
-    }
+    object EmailSignUp : AppScreen("email_signup")
 
     /**
-     * Represents the user's profile screen, shown after successful login.
+     * Represents the form for logging in with an email and password.
      */
-    object ProfileScreen : AppScreen("profile")
+    object EmailLogin : AppScreen("email_login")
 
-    // Add other screens here as the app grows
-    // Example: object HomeScreen : AppScreen("home")
-    // Example: object ChatScreen : AppScreen("chat/{chatId}") {
-    // fun createRoute(chatId: String) = "chat/$chatId"
-    // }
-} 
+    /**
+     * Represents the Home screen, the main screen after authentication.
+     */
+    object Home : AppScreen("home")
+}

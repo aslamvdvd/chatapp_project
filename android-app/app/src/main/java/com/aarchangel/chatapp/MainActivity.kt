@@ -1,331 +1,121 @@
 package com.aarchangel.chatapp
 
-// ChatApp by aarchangel
-
-import android.app.Application
 import android.os.Bundle
-import android.widget.Toast
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.*
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import androidx.compose.ui.platform.LocalSavedStateRegistryOwner
-import androidx.compose.ui.platform.LocalContext
-import com.aarchangel.chatapp.config.AppConfig
-import com.aarchangel.chatapp.navigation.AppScreen
-import com.aarchangel.chatapp.ui.components.SharedAppHeader
-import com.aarchangel.chatapp.ui.screens.AuthOptionsScreen
-import com.aarchangel.chatapp.ui.screens.ProfileScreen
-import com.aarchangel.chatapp.ui.screens.WelcomeScreen
-import com.aarchangel.chatapp.ui.screens.auth.EmailSignUpScreen
-import com.aarchangel.chatapp.ui.screens.auth.LoginScreen
-import com.aarchangel.chatapp.ui.theme.ChatAppTheme
-import com.aarchangel.chatapp.ui.theme.Dimens
-import com.aarchangel.chatapp.viewmodel.AuthOptionsViewModel
-import com.aarchangel.chatapp.viewmodel.EmailAuthViewModel
-import com.aarchangel.chatapp.viewmodel.LoginViewModel
-import com.aarchangel.chatapp.viewmodel.WelcomeViewModel
-import kotlinx.coroutines.launch
-import com.aarchangel.chatapp.data.network.AuthServiceImpl
-import com.aarchangel.chatapp.network.AuthServiceImpl as KtorAuthServiceImpl
+import com.aarchangel.chatapp.data.AuthRepository
 import com.aarchangel.chatapp.data.TokenStorage
+import com.aarchangel.chatapp.navigation.AppScreen
+import com.aarchangel.chatapp.network.AuthService
+import com.aarchangel.chatapp.network.AuthServiceImpl
+import com.aarchangel.chatapp.ui.screens.AuthEntryScreen
+import com.aarchangel.chatapp.ui.screens.EmailLoginScreen
+import com.aarchangel.chatapp.ui.screens.EmailSignUpScreen
+import com.aarchangel.chatapp.ui.screens.HomeScreen
+import com.aarchangel.chatapp.ui.screens.LoginMethodScreen
+import com.aarchangel.chatapp.ui.screens.SignUpMethodScreen
+import com.aarchangel.chatapp.ui.screens.SplashScreen
+import com.aarchangel.chatapp.ui.screens.WelcomeScreen
+import com.aarchangel.chatapp.ui.theme.ChatAppTheme
+import com.aarchangel.chatapp.viewmodel.MainViewModel
 
-/**
- * Main activity for the ChatApp application.
- * This activity serves as the entry point and hosts the Jetpack Compose UI navigation.
- * // ChatApp by aarchangel
- */
 class MainActivity : ComponentActivity() {
-    /**
-     * Called when the activity is first created. This is where you should do all of your normal
-     * static set up: create views, bind data to lists, etc. This method also provides you with
-     * a Bundle containing the activity's previously frozen state, if there was one.
-     *
-     * @param savedInstanceState If the activity is being re-initialized after previously being
-     * shut down then this Bundle contains the data it most recently supplied in onSaveInstanceState(Bundle).
-     * Note: Otherwise it is null.
-     */
-    @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
+    private val authService: AuthService by lazy { AuthServiceImpl() }
+    private val tokenStorage by lazy { TokenStorage(applicationContext) }
+    private val authRepository by lazy { AuthRepository(authService, tokenStorage) }
+
+    private val mainViewModel: MainViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+                    @Suppress("UNCHECKED_CAST")
+                    return MainViewModel(authService, authRepository) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class")
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ChatAppTheme {
-                ChatAppRoot()
+            ChatAppTheme(darkTheme = true) { // Enforcing dark theme for now
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    ChatAppNavigation(mainViewModel = mainViewModel)
+                }
             }
         }
     }
 }
 
-/**
- * Main navigation composable for the ChatApp.
- * Sets up the NavHost and defines all navigation routes and their corresponding screens.
- * Observes navigation events from ViewModels.
- * // ChatApp by aarchangel
- *
- * @param modifier Modifier for styling.
- * @param navController The NavHostController for managing navigation.
- * @param welcomeViewModel ViewModel for WelcomeScreen.
- * @param authOptionsViewModel ViewModel for AuthOptionsScreen.
- * @param emailAuthViewModel ViewModel for Email/Password authentication flow.
- * @param loginViewModel ViewModel for LoginScreen.
- * @param snackbarHostState Host state for showing Snackbars.
- */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatAppNavigation(
-    modifier: Modifier = Modifier,
-    navController: NavHostController,
-    welcomeViewModel: WelcomeViewModel,
-    authOptionsViewModel: AuthOptionsViewModel,
-    emailAuthViewModel: EmailAuthViewModel,
-    loginViewModel: LoginViewModel,
-    snackbarHostState: SnackbarHostState
-) {
-    val scope = rememberCoroutineScope()
-
-    // Observe navigation events from WelcomeViewModel
-    LaunchedEffect(welcomeViewModel.navigationEvent) {
-        welcomeViewModel.navigationEvent.collect { route ->
-            navController.navigate(route)
-        }
-    }
-
-    // Observe navigation events from AuthOptionsViewModel
-    LaunchedEffect(authOptionsViewModel.navigationEvent) {
-        authOptionsViewModel.navigationEvent.collect { route ->
-            navController.navigate(route)
-        }
-    }
-
-    // Observe snackbar messages from AuthOptionsViewModel
-    LaunchedEffect(authOptionsViewModel.snackbarMessage) {
-        authOptionsViewModel.snackbarMessage.collect { message ->
-            scope.launch {
-                snackbarHostState.showSnackbar(message)
-            }
-        }
-    }
-
-    // Observe navigation events from EmailAuthViewModel
-    LaunchedEffect(emailAuthViewModel.navigationEvent) {
-        emailAuthViewModel.navigationEvent.collect { route ->
-            navController.navigate(route)
-        }
-    }
-
-    // Observe snackbar messages from EmailAuthViewModel
-    LaunchedEffect(emailAuthViewModel.snackbarMessage) {
-        emailAuthViewModel.snackbarMessage.collect { message ->
-            scope.launch {
-                snackbarHostState.showSnackbar(message)
-            }
-        }
-    }
-
-    // Re-add LaunchedEffects for LoginViewModel
-    LaunchedEffect(loginViewModel.navigationEvent) {
-        loginViewModel.navigationEvent.collect { route ->
-            navController.navigate(route) {
-                if (route == AppScreen.ProfileScreen.route) {
-                    popUpTo(AppScreen.Welcome.route) {
-                        inclusive = false
-                    }
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(loginViewModel.snackbarMessage) {
-        loginViewModel.snackbarMessage.collect { message ->
-            scope.launch {
-                snackbarHostState.showSnackbar(message)
-            }
-        }
-    }
+fun ChatAppNavigation(mainViewModel: MainViewModel) {
+    val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = AppScreen.Welcome.route,
-        modifier = modifier
+        startDestination = AppScreen.Splash.route
     ) {
-        composable(route = AppScreen.Welcome.route) {
-            WelcomeScreen(welcomeViewModel = welcomeViewModel)
+        composable(AppScreen.Splash.route) {
+            SplashScreen(navController = navController, mainViewModel = mainViewModel)
         }
-
-        composable(
-            route = AppScreen.AuthOptions.route,
-            arguments = listOf(navArgument("flowType") { type = NavType.StringType }),
-            enterTransition = { fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 200)) },
-            popExitTransition = { fadeOut(animationSpec = tween(durationMillis = 200)) }
-        ) { backStackEntry ->
-            val flowType = backStackEntry.arguments?.getString("flowType") ?: "login"
-            AuthOptionsScreen(
-                flowType = flowType,
-                authOptionsViewModel = authOptionsViewModel,
-                onNavigateBack = { navController.popBackStack() }
+        composable(AppScreen.Welcome.route) {
+            WelcomeScreen(
+                onAgreeAndContinue = {
+                    Log.d("WelcomeScreen", "Agree and Continue clicked. Navigating to AuthEntry.")
+                    navController.navigate(AppScreen.AuthEntry.route)
+                }
             )
         }
-
-        composable(
-            route = AppScreen.EmailSignUpScreen.route,
-            arguments = listOf(
-                navArgument("flowType") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val flowType = backStackEntry.arguments?.getString("flowType") ?: "signup"
-            EmailSignUpScreen(
-                emailAuthViewModel = emailAuthViewModel,
-                onNavigateBack = { navController.popBackStack() },
-                flowType = flowType
-            )
-        }
-
-        // Placeholder for Email Auth Screen (Main/Dashboard after login)
-        composable(route = AppScreen.EmailAuth.route) { // This was a placeholder, might need to be re-evaluated or removed
-            // This route name "email_auth" is a bit confusing now.
-            // It was originally for a generic email auth screen.
-            // For now, let's assume it was a placeholder for a screen after successful email/password auth.
-            // We should define a proper HomeScreen/DashboardScreen route later.
-            // Example: Text("Dashboard Placeholder: Welcome!")
-        }
-
-        composable(route = AppScreen.ProfileScreen.route) {
-            ProfileScreen(loginViewModel = loginViewModel)
-        }
-
-        composable(route = AppScreen.Login.route) {
-            val context = LocalContext.current // For Toast
-            LoginScreen( // Use the original LoginScreen from java path
-                loginViewModel = loginViewModel, // Pass the original LoginViewModel
-                onNavigateBack = { navController.popBackStack() }, // Original onNavigateBack
+        composable(AppScreen.AuthEntry.route) {
+            AuthEntryScreen(
                 onNavigateToSignUp = {
-                    navController.navigate(AppScreen.EmailSignUpScreen.createRoute("signup"))
+                    navController.navigate(AppScreen.SignUpMethod.route)
                 },
-                onNavigateToForgotPassword = {
-                    Toast.makeText(context, "Forgot Password: Coming Soon!", Toast.LENGTH_SHORT).show()
+                onNavigateToLogin = {
+                    navController.navigate(AppScreen.LoginMethod.route)
                 }
             )
         }
-    }
-}
-
-/**
- * Root composable for the ChatApp.
- * Sets up the theme, NavController, ViewModels, and Scaffold structure.
- * // ChatApp by aarchangel
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ChatAppRoot() {
-    ChatAppTheme {
-        val navController = rememberNavController()
-        val welcomeViewModel: WelcomeViewModel = viewModel()
-        val authOptionsViewModel: AuthOptionsViewModel = viewModel()
-        val application = LocalContext.current.applicationContext as Application
-
-        // AuthService for EmailAuthViewModel (Java path, old implementation)
-        val oldAuthService = remember { com.aarchangel.chatapp.data.network.AuthServiceImpl() }
-        
-        // Ktor-based AuthService for LoginViewModel (Java path, new implementation)
-        val ktorAuthService = remember { KtorAuthServiceImpl() }
-        val tokenStorage = remember { TokenStorage(application) }
-        
-        val owner = LocalSavedStateRegistryOwner.current
-        val activity = (LocalContext.current as? ComponentActivity)
-        val defaultArgs = activity?.intent?.extras
-
-        val emailAuthViewModel: EmailAuthViewModel = viewModel(
-            factory = EmailAuthViewModel.provideFactory(
-                authService = oldAuthService, // Pass the OLD authService
-                owner = owner,
-                defaultArgs = defaultArgs
+        composable(AppScreen.SignUpMethod.route) {
+            SignUpMethodScreen(
+                onContinueWithPhone = { Log.d("SignUpMethodScreen", "Continue with Phone clicked") },
+                onContinueWithEmail = { navController.navigate(AppScreen.EmailSignUp.route) },
+                onContinueWithGoogle = { Log.d("SignUpMethodScreen", "Continue with Google clicked") },
+                onContinueWithApple = { Log.d("SignUpMethodScreen", "Continue with Apple clicked") }
             )
-        )
-        
-        val loginViewModel: LoginViewModel = viewModel(
-            factory = LoginViewModel.provideFactory(
-                application = application,
-                authService = ktorAuthService, // Pass the NEW Ktor-based authService
-                tokenStorage = tokenStorage,
-                owner = owner,
-                defaultArgs = defaultArgs
+        }
+        composable(AppScreen.LoginMethod.route) {
+            LoginMethodScreen(
+                onContinueWithPhone = { Log.d("LoginMethodScreen", "Continue with Phone clicked") },
+                onContinueWithEmail = { navController.navigate(AppScreen.EmailLogin.route) },
+                onContinueWithGoogle = { Log.d("LoginMethodScreen", "Continue with Google clicked") },
+                onContinueWithApple = { Log.d("LoginMethodScreen", "Continue with Apple clicked") }
             )
-        )
-        val snackbarHostState = remember { SnackbarHostState() }
-        val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
-        Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            topBar = {
-                // Show SharedAppHeader only on WelcomeScreen
-                if (currentRoute == AppScreen.Welcome.route) {
-                    SharedAppHeader(isPrimaryScreen = true)
-                }
-                // Other screens (EmailEntry, PasswordEntry, AuthOptions) manage their own TopAppBars or don't have one.
-                // Future screens post-auth might use SharedAppHeader(isPrimaryScreen = false)
-            }
-        ) {
-            ChatAppNavigation(
-                modifier = Modifier.padding(it),
-                navController = navController,
-                welcomeViewModel = welcomeViewModel,
-                authOptionsViewModel = authOptionsViewModel,
-                emailAuthViewModel = emailAuthViewModel,
-                loginViewModel = loginViewModel,
-                snackbarHostState = snackbarHostState
-            )
+        }
+        composable(AppScreen.EmailSignUp.route) {
+            EmailSignUpScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable(AppScreen.EmailLogin.route) {
+            EmailLoginScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable(AppScreen.Home.route) {
+            HomeScreen(mainViewModel = mainViewModel)
         }
     }
 }
-
-/**
- * A preview composable for the MainActivity content (ChatAppNavigation).
- * This preview now calls ChatAppRoot to reflect the full app structure for previews.
- * // ChatApp by aarchangel
- */
-@Preview(showBackground = true, name = "ChatApp - Root (Welcome)")
-@Composable
-fun ChatAppRootPreviewWelcome() { // Renamed and updated to call ChatAppRoot
-    ChatAppTheme { ChatAppRoot() }
-}
-
-@Preview(showBackground = true, name = "ChatApp - Root (Welcome) - Dark", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
-@Composable
-fun ChatAppRootPreviewWelcomeDark() { // Added dark mode preview for root
-    ChatAppTheme(darkTheme = true) { ChatAppRoot() }
-}
-
-@Preview(showBackground = true, name = "ChatApp - Root (Welcome) - Tablet", device = "spec:width=1280dp,height=800dp,dpi=240")
-@Composable
-fun ChatAppRootPreviewWelcomeTablet() { // Renamed and updated to call ChatAppRoot
-    ChatAppTheme { ChatAppRoot() }
-}
-
-// It's generally better to preview individual screens or ChatAppRoot.
-// Previewing ChatAppNavigation directly can be complex due to ViewModel dependencies that ChatAppRoot handles.
-// Removed ChatAppNavigationPreviewAuthOptions if it existed, as ChatAppRoot previews are more comprehensive. 
