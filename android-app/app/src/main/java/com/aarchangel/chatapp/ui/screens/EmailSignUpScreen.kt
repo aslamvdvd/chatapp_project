@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -30,7 +33,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aarchangel.chatapp.data.network.dto.SignUpRequest
 import com.aarchangel.chatapp.viewmodel.EmailAuthViewModel
 import com.aarchangel.chatapp.viewmodel.ViewModelFactory
+import androidx.compose.ui.focus.FocusDirection
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmailSignUpScreen(
     onNavigateBack: () -> Unit,
@@ -39,6 +44,7 @@ fun EmailSignUpScreen(
     val factory = ViewModelFactory(LocalContext.current)
     val viewModel: EmailAuthViewModel = viewModel(factory = factory)
     val signUpState by viewModel.signUpState.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     var firstName by remember { mutableStateOf("") }
     var middleName by remember { mutableStateOf("") }
@@ -51,6 +57,8 @@ fun EmailSignUpScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var genderDropdownExpanded by remember { mutableStateOf(false) }
+    val genderOptions = listOf("Male", "Female", "Other")
 
     LaunchedEffect(signUpState.isSuccess) {
         if (signUpState.isSuccess) {
@@ -65,7 +73,7 @@ fun EmailSignUpScreen(
         { _, year, month, dayOfMonth ->
             val newDate = Calendar.getInstance()
             newDate.set(year, month, dayOfMonth)
-            val format = SimpleDateFormat("dd-mm-yyyy", Locale.getDefault())
+            val format = SimpleDateFormat("ddMMyyyy", Locale.getDefault())
             dob = format.format(newDate.time)
         },
         calendar.get(Calendar.YEAR),
@@ -94,19 +102,67 @@ fun EmailSignUpScreen(
 
             Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
             
-            OutlinedTextField(value = firstName, onValueChange = { firstName = it }, label = { Text("First Name*") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = middleName, onValueChange = { middleName = it }, label = { Text("Middle Name") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text("Last Name*") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Username*") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email Address*") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                value = firstName,
+                onValueChange = { firstName = it },
+                label = { Text("First Name*") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = middleName,
+                onValueChange = { middleName = it },
+                label = { Text("Middle Name") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = lastName,
+                onValueChange = { lastName = it },
+                label = { Text("Last Name*") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("Username*") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email Address*") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                modifier = Modifier.fillMaxWidth(),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                singleLine = true
+            )
 
             OutlinedTextField(
                 value = dob,
-                onValueChange = { if (it.length <= 8) dob = it.filter { char -> char.isDigit() } },
+                onValueChange = {
+                    val digits = it.filter { char -> char.isDigit() }
+                    if (digits.length <= 8) {
+                        dob = digits
+                    }
+                },
                 label = { Text("Date of Birth (dd-mm-yyyy)*") },
+                isError = signUpState.fieldErrors?.containsKey("date_of_birth") == true,
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                 visualTransformation = DateVisualTransformation(),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                singleLine = true,
                 trailingIcon = {
                     IconButton(onClick = { datePickerDialog.show() }) {
                         Icon(Icons.Default.DateRange, contentDescription = "Select Date")
@@ -114,7 +170,40 @@ fun EmailSignUpScreen(
                 }
             )
 
-            OutlinedTextField(value = gender, onValueChange = { gender = it }, label = { Text("Gender") }, modifier = Modifier.fillMaxWidth())
+            signUpState.fieldErrors?.get("date_of_birth")?.let {
+                Text(it.joinToString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+
+            ExposedDropdownMenuBox(
+                expanded = genderDropdownExpanded,
+                onExpandedChange = { genderDropdownExpanded = !genderDropdownExpanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = gender,
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text("Gender") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderDropdownExpanded)
+                    },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = genderDropdownExpanded,
+                    onDismissRequest = { genderDropdownExpanded = false }
+                ) {
+                    genderOptions.forEach { selectionOption ->
+                        DropdownMenuItem(
+                            text = { Text(selectionOption) },
+                            onClick = {
+                                gender = selectionOption
+                                genderDropdownExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
             
             OutlinedTextField(
                 value = password,
@@ -122,7 +211,14 @@ fun EmailSignUpScreen(
                 label = { Text("Password*") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
+                singleLine = true,
                 trailingIcon = {
                     val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -138,7 +234,28 @@ fun EmailSignUpScreen(
                 isError = signUpState.fieldErrors?.containsKey("confirm_password") == true,
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        viewModel.signUp(
+                            SignUpRequest(
+                                email = email,
+                                username = username,
+                                firstName = firstName,
+                                middleName = middleName.ifEmpty { null },
+                                lastName = lastName,
+                                dateOfBirth = dob,
+                                gender = gender.ifEmpty { null },
+                                password = password,
+                                confirmPassword = confirmPassword
+                            )
+                        )
+                    }
+                ),
+                singleLine = true,
                 trailingIcon = {
                     val image = if (confirmPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {

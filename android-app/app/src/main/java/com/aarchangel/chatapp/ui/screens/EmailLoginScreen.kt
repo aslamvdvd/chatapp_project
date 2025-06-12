@@ -1,7 +1,7 @@
 package com.aarchangel.chatapp.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -10,37 +10,42 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import com.aarchangel.chatapp.config.AppConfig
-import com.aarchangel.chatapp.dto.LoginRequest
-import com.aarchangel.chatapp.viewmodel.LoginViewModel
-import com.aarchangel.chatapp.viewmodel.ViewModelFactory
-import com.aarchangel.chatapp.ui.theme.ChatAppTheme
-import com.aarchangel.chatapp.ui.theme.Dimens
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aarchangel.chatapp.config.AppConfig
+import com.aarchangel.chatapp.dto.LoginRequest
+import com.aarchangel.chatapp.dto.UserProfileDto
+import com.aarchangel.chatapp.ui.theme.ChatAppTheme
+import com.aarchangel.chatapp.ui.theme.Dimens
+import com.aarchangel.chatapp.viewmodel.LoginViewModel
+import com.aarchangel.chatapp.viewmodel.ViewModelFactory
 
 @Composable
 fun EmailLoginScreen(
     onNavigateBack: () -> Unit,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: (UserProfileDto) -> Unit
 ) {
     val factory = ViewModelFactory(LocalContext.current)
     val viewModel: LoginViewModel = viewModel(factory = factory)
     val loginState by viewModel.loginState.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     var emailOrUsername by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
-        viewModel.loginEvent.collect {
-            onLoginSuccess()
+        viewModel.loginEvent.collect { userProfile ->
+            onLoginSuccess(userProfile)
         }
     }
 
@@ -69,7 +74,10 @@ fun EmailLoginScreen(
                 onValueChange = { emailOrUsername = it },
                 label = { Text("Email or Username") },
                 isError = loginState.fieldErrors?.containsKey("email_or_username") == true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                singleLine = true
             )
             
             loginState.fieldErrors?.get("email_or_username")?.let {
@@ -85,7 +93,18 @@ fun EmailLoginScreen(
                 isError = loginState.fieldErrors?.containsKey("password") == true,
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        viewModel.login(
+                            LoginRequest(
+                                emailOrUsername = emailOrUsername,
+                                password = password
+                            )
+                        )
+                    }
+                ),
+                singleLine = true,
                 trailingIcon = {
                     val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -136,6 +155,6 @@ fun EmailLoginScreen(
 @Composable
 fun EmailLoginScreenPreview() {
     ChatAppTheme(darkTheme = true) {
-        EmailLoginScreen(onNavigateBack = {}, onLoginSuccess = {})
+        EmailLoginScreen(onNavigateBack = {}, onLoginSuccess = { /* Preview doesn't handle this */ })
     }
 } 

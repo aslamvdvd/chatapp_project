@@ -28,14 +28,33 @@ class EmailAuthViewModel(private val authService: AuthService) : ViewModel() {
     fun signUp(request: SignUpRequest) {
         viewModelScope.launch {
             _signUpState.value = SignUpState(isLoading = true)
+
+            if (request.dateOfBirth.length != 8) {
+                _signUpState.value = SignUpState(fieldErrors = mapOf("date_of_birth" to listOf("Please enter a valid date.")))
+                return@launch
+            }
             
             val apiDob = try {
-                val displayFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
-                val apiFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val displayFormat = SimpleDateFormat("ddMMyyyy", Locale.getDefault())
                 val date = displayFormat.parse(request.dateOfBirth)
+                
+                date?.let {
+                    val dobCalendar = Calendar.getInstance().apply { time = it }
+                    val today = Calendar.getInstance()
+                    var age = today.get(Calendar.YEAR) - dobCalendar.get(Calendar.YEAR)
+                    if (today.get(Calendar.DAY_OF_YEAR) < dobCalendar.get(Calendar.DAY_OF_YEAR)) {
+                        age--
+                    }
+                    if (age < 13) {
+                        _signUpState.value = SignUpState(fieldErrors = mapOf("date_of_birth" to listOf("You must be at least 13 years old.")))
+                        return@launch
+                    }
+                }
+
+                val apiFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 date?.let { apiFormat.format(it) } ?: ""
             } catch (e: Exception) {
-                _signUpState.value = SignUpState(error = "Invalid date format. Use dd-MM-yyyy.")
+                _signUpState.value = SignUpState(fieldErrors = mapOf("date_of_birth" to listOf("Invalid date format. Use dd-MM-yyyy.")))
                 return@launch
             }
 

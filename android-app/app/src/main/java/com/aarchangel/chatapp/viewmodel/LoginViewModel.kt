@@ -6,6 +6,7 @@ import com.aarchangel.chatapp.data.TokenStorage
 import com.aarchangel.chatapp.data.network.AuthService
 import com.aarchangel.chatapp.data.network.NetworkResult
 import com.aarchangel.chatapp.dto.LoginRequest
+import com.aarchangel.chatapp.dto.UserProfileDto
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +27,7 @@ class LoginViewModel(
     private val _loginState = MutableStateFlow(LoginState())
     val loginState = _loginState.asStateFlow()
 
-    private val _loginEvent = Channel<Unit>()
+    private val _loginEvent = Channel<UserProfileDto>()
     val loginEvent = _loginEvent.receiveAsFlow()
 
     fun login(request: LoginRequest) {
@@ -34,9 +35,21 @@ class LoginViewModel(
             _loginState.value = LoginState(isLoading = true)
             when (val result = authService.login(request)) {
                 is NetworkResult.Success -> {
-                    tokenStorage.saveToken(result.data.accessToken)
-                    _loginState.value = LoginState()
-                    _loginEvent.send(Unit)
+                    val token = result.data.accessToken
+                    tokenStorage.saveToken(token)
+
+                    when (val profileResult = authService.getProfile(token)) {
+                        is NetworkResult.Success -> {
+                            _loginState.value = LoginState()
+                            _loginEvent.send(profileResult.data)
+                        }
+                        is NetworkResult.Error -> {
+                            _loginState.value = LoginState(
+                                error = profileResult.message ?: "Failed to fetch profile.",
+                                fieldErrors = profileResult.fieldErrors
+                            )
+                        }
+                    }
                 }
                 is NetworkResult.Error -> {
                     _loginState.value = LoginState(

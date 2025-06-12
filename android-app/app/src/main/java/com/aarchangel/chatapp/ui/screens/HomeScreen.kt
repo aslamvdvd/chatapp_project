@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -18,9 +19,16 @@ import com.aarchangel.chatapp.viewmodel.MainViewModel
 
 @Composable
 fun HomeScreen(
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    onLogout: () -> Unit
 ) {
     val sessionState by mainViewModel.sessionState.collectAsState()
+
+    LaunchedEffect(sessionState) {
+        if (sessionState is SessionState.LoggedOut) {
+            onLogout()
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -43,8 +51,8 @@ fun HomeScreen(
                     }
                 }
                 else -> {
-                    // This should not happen if navigation is correct, but as a fallback:
-                    Text("Loading...", style = MaterialTheme.typography.headlineMedium)
+                    // This space is intentionally left blank to avoid showing a "Loading..."
+                    // message during the brief moment of logging out before navigation occurs.
                 }
             }
         }

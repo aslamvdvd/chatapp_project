@@ -132,7 +132,8 @@ fun ChatAppNavigation(mainViewModel: MainViewModel) {
         composable(AppScreen.EmailLogin.route) {
             EmailLoginScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onLoginSuccess = {
+                onLoginSuccess = { userProfile ->
+                    mainViewModel.onLoginSuccess(userProfile)
                     navController.navigate(AppScreen.Home.route) {
                         popUpTo(navController.graph.startDestinationId) {
                             inclusive = true
@@ -142,7 +143,16 @@ fun ChatAppNavigation(mainViewModel: MainViewModel) {
             )
         }
         composable(AppScreen.Home.route) {
-            HomeScreen(mainViewModel = mainViewModel)
+            HomeScreen(
+                mainViewModel = mainViewModel,
+                onLogout = {
+                    navController.navigate(AppScreen.AuthEntry.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
         }
     }
 }

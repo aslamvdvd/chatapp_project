@@ -1,7 +1,7 @@
 // Placeholder for user.rs model
 
 use crate::core::rbac::Role;
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use utoipa::ToSchema;
@@ -76,11 +76,28 @@ pub struct SignupUserDto {
 /// Custom validation function for date_of_birth field.
 /// Ensures the date string can be parsed into a valid NaiveDate.
 fn validate_dob(dob: &str) -> Result<(), validator::ValidationError> {
-    NaiveDate::parse_from_str(dob, "%Y-%m-%d")
-        .map(|_| ())
-        .map_err(|_| {
-            validator::ValidationError::new("Invalid date_of_birth format. Use YYYY-MM-DD.")
-        })
+    let date = NaiveDate::parse_from_str(dob, "%Y-%m-%d");
+    match date {
+        Ok(dob_date) => {
+            let today = Utc::now().date_naive();
+            let mut age = today.year() - dob_date.year();
+            if today.ordinal() < dob_date.ordinal() {
+                age -= 1;
+            }
+
+            if age < 13 {
+                let mut err = validator::ValidationError::new("age_restriction");
+                err.message = Some("You must be at least 13 years old to register.".into());
+                return Err(err);
+            }
+            Ok(())
+        }
+        Err(_) => {
+            let mut err = validator::ValidationError::new("invalid_date_format");
+            err.message = Some("Date of birth must be in YYYY-MM-DD format.".into());
+            Err(err)
+        }
+    }
 }
 
 /// Represents the data returned to the client after a successful signup.
