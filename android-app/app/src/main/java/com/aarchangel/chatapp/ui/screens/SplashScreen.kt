@@ -21,21 +21,25 @@ fun SplashScreen(
     mainViewModel: MainViewModel
 ) {
     val sessionState by mainViewModel.sessionState.collectAsState()
+    val hasAgreedToTerms by mainViewModel.hasAgreedToTerms.collectAsState()
 
-    LaunchedEffect(sessionState) {
-        when (sessionState) {
-            is SessionState.LoggedIn -> {
-                navController.navigate(AppScreen.Home.route) {
-                    popUpTo(AppScreen.Splash.route) { inclusive = true }
-                }
-            }
+    LaunchedEffect(sessionState, hasAgreedToTerms) {
+        // This logic ensures we only navigate away from splash once a decision can be made
+        if (sessionState is SessionState.Loading) {
+            return@LaunchedEffect // Wait until session check is complete
+        }
+
+        val destination = when (sessionState) {
+            is SessionState.LoggedIn -> AppScreen.Home.route
             is SessionState.LoggedOut -> {
-                navController.navigate(AppScreen.Welcome.route) {
-                    popUpTo(AppScreen.Splash.route) { inclusive = true }
-                }
+                if (hasAgreedToTerms) AppScreen.AuthEntry.route else AppScreen.Welcome.route
             }
-            SessionState.Loading -> {
-                // Do nothing, just show the loading screen
+            else -> null // Should not happen if loading check is above
+        }
+
+        destination?.let {
+            navController.navigate(it) {
+                popUpTo(AppScreen.Splash.route) { inclusive = true }
             }
         }
     }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -17,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aarchangel.chatapp.data.AuthRepository
 import com.aarchangel.chatapp.data.TokenStorage
+import com.aarchangel.chatapp.data.local.PreferenceManager
 import com.aarchangel.chatapp.navigation.AppScreen
 import com.aarchangel.chatapp.network.AuthService
 import com.aarchangel.chatapp.network.AuthServiceImpl
@@ -30,18 +32,20 @@ import com.aarchangel.chatapp.ui.screens.SplashScreen
 import com.aarchangel.chatapp.ui.screens.WelcomeScreen
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.viewmodel.MainViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val authService: AuthService by lazy { AuthServiceImpl() }
     private val tokenStorage by lazy { TokenStorage(applicationContext) }
     private val authRepository by lazy { AuthRepository(authService, tokenStorage) }
+    private val preferenceManager by lazy { PreferenceManager(applicationContext) }
 
     private val mainViewModel: MainViewModel by viewModels {
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
                     @Suppress("UNCHECKED_CAST")
-                    return MainViewModel(authService, authRepository) as T
+                    return MainViewModel(authService, authRepository, preferenceManager) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class")
             }
@@ -66,6 +70,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ChatAppNavigation(mainViewModel: MainViewModel) {
     val navController = rememberNavController()
+    val coroutineScope = rememberCoroutineScope()
 
     NavHost(
         navController = navController,
@@ -77,8 +82,14 @@ fun ChatAppNavigation(mainViewModel: MainViewModel) {
         composable(AppScreen.Welcome.route) {
             WelcomeScreen(
                 onAgreeAndContinue = {
-                    Log.d("WelcomeScreen", "Agree and Continue clicked. Navigating to AuthEntry.")
-                    navController.navigate(AppScreen.AuthEntry.route)
+                    coroutineScope.launch {
+                        mainViewModel.onTermsAgreed()
+                    }
+                    navController.navigate(AppScreen.AuthEntry.route) {
+                        popUpTo(AppScreen.Welcome.route) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }

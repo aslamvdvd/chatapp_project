@@ -91,6 +91,9 @@ dependencies {
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
+    // Jetpack Datastore for preferences
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
     // Jetpack Security for EncryptedSharedPreferences
     implementation("androidx.security:security-crypto:1.0.0")
 } 

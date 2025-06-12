@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aarchangel.chatapp.data.AuthRepository
+import com.aarchangel.chatapp.data.local.PreferenceManager
 import com.aarchangel.chatapp.dto.UserProfileDto
 import com.aarchangel.chatapp.model.SessionState
 import com.aarchangel.chatapp.network.AuthService
@@ -12,17 +13,23 @@ import com.aarchangel.chatapp.navigation.AppScreen
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MainViewModel(
     private val authService: AuthService,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val preferenceManager: PreferenceManager
 ) : ViewModel() {
 
     private val _sessionState = MutableStateFlow<SessionState>(SessionState.Loading)
     val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
+
+    val hasAgreedToTerms: StateFlow<Boolean> = preferenceManager.hasAgreedToTerms
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {
         checkSession()
@@ -45,6 +52,12 @@ class MainViewModel(
                     _sessionState.value = SessionState.LoggedOut
                 }
             }
+        }
+    }
+
+    fun onTermsAgreed() {
+        viewModelScope.launch {
+            preferenceManager.setTermsAgreement(true)
         }
     }
 
