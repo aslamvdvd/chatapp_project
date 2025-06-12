@@ -1,80 +1,83 @@
-# GhostTalk - Privacy-Focused Chat Application
+# GhostTalk - Privacy-Focused Microservice Chat Application
 
-This repository contains the source code for GhostTalk, a privacy-focused chat application.
-It is structured as a monorepo with a native Android frontend and a Rust-based backend.
+This repository contains the source code for GhostTalk, a privacy-focused chat application being built with a microservice architecture.
+
+## Project Vision
+
+GhostTalk aims to be a secure, private, and modern messaging platform. By leveraging a microservice backend and native clients, it is designed for scalability, resilience, and maintainability.
 
 ## Project Structure
 
+The project is a monorepo organized by domain (`apps`, `services`, `libs`, `infra`) to support a growing number of services and shared modules.
+
 ```
-GhostTalk/
-├── android-app/            # Native Android frontend (Kotlin, Jetpack Compose)
-├── backend/                # Rust + Actix Web API
+ghosttalk/
+├── apps/
+│   ├── android-app/                  # Native Android client (Kotlin/Compose)
+│   └── admin-dashboard/              # Placeholder for web-based admin panel
+├── services/
+│   ├── auth-api/                     # Handles user authentication and registration
+│   └── ... (placeholders for chat, profiles, etc.)
+├── libs/
+│   ├── ... (placeholders for shared Rust/C++/JNI libraries)
+├── infra/
+│   ├── docker/                       # Service Dockerfiles
+│   ├── postgres/                     # Database schemas and initialization
+│   ├── docker-compose.yml            # Main composition for development
+│   └── ... (placeholders for Prometheus, Grafana, etc.)
+├── scripts/
+│   ├── init_env.sh                   # Environment setup script
+│   └── seed_db.sh                    # Database seeder (placeholder)
+├── .env.example                      # Example environment variables
 ├── .gitignore
-├── CODE_OF_CONDUCT.md
-├── CONTRIBUTING.md
-├── LICENSE
-├── README.md               # This file (root README)
-└── settings.gradle.kts     # Root Gradle settings (for Android project)
+├── README.md                         # This file
+└── LICENSE
 ```
 
-## Modules
+## Getting Started
 
-### 1. `android-app/`
+### Prerequisites
 
-This directory contains the native Android application built with Kotlin and Jetpack Compose.
+-   **Docker & Docker Compose:** For running the backend services.
+-   **Rust & Cargo:** For building and running the `auth-api` service.
+-   **Android Studio & Gradle:** For building and running the Android application.
 
-**Build & Run (Android):**
+### 1. Initial Environment Setup
 
-1.  Navigate to the `android-app/` directory:
-    ```bash
-    cd android-app
-    ```
-2.  **Ensure you have Android Studio installed** (latest stable version recommended) or at least the Android SDK and a compatible JDK (e.g., JDK 17).
-3.  **Build the project using Gradle Wrapper:**
-    ```bash
-    ./gradlew build
-    ```
-4.  **Install on a connected device or emulator:**
-    ```bash
-    ./gradlew installDebug
-    ```
-    Alternatively, open the `android-app/` project in Android Studio and run it directly from the IDE.
+First, prepare your local environment by creating a `.env` file from the provided template.
 
-For more details on the Android application, see `android-app/README.md`.
+```bash
+# Make sure the script is executable
+chmod +x scripts/init_env.sh
 
-### 2. `backend/`
+# Run the script
+./scripts/init_env.sh
+```
 
-This directory contains the backend API server built with Rust and the Actix Web framework.
+This will create a `.env` file at the root of the project. **Review and update the variables** in this file, especially the database credentials.
 
-**Setup & Run (Backend):**
+### 2. Running the Backend
 
-1.  **Ensure you have Rust installed.** You can install it from [rust-lang.org](https://www.rust-lang.org/).
-2.  Navigate to the `backend/` directory:
-    ```bash
-    cd backend
-    ```
-3.  **(Optional) Create a `.env` file** from `.env.template` and customize if needed:
-    ```bash
-    cp .env.template .env
-    # Modify .env with your desired PORT, e.g., PORT=8080
-    ```
-4.  **Build the backend (debug mode):**
-    ```bash
-    cargo build
-    ```
-5.  **Run the backend server (debug mode):**
-    ```bash
-    cargo run
-    ```
-    The server will typically start on `http://0.0.0.0:8080` (or the port specified in `.env`).
-    The general health check endpoint will be available at `GET /health`.
-    The database health check endpoint will be available at `GET /health/db`.
-    A placeholder admin endpoint is available at `GET /admin`.
+The entire backend stack can be started using Docker Compose.
 
-6.  **Build for release:**
-    ```bash
-    cargo build --release
-    ```
+```bash
+docker-compose up --build -d
+```
+
+This will:
+1.  Build the `auth-api` service from its Dockerfile.
+2.  Start a PostgreSQL database container.
+3.  Run the database initialization script from `infra/postgres/init.sql`.
+4.  Start the `auth-api` service, which will connect to the database.
+
+The `auth-api` will be available at `http://localhost:8080` (or the port you configure in `.env`).
+
+### 3. Running the Android App
+
+1.  Open the Android project located at `apps/android-app/` in Android Studio.
+2.  Let Gradle sync the project dependencies.
+3.  **Important:** Ensure the `API_URL` in `apps/android-app/app/build.gradle.kts` matches the address of your `auth-api` service as seen from your Android device/emulator (e.g., `http://192.168.1.100:8080`, not `localhost`).
+4.  Run the app on a connected device or emulator.
 
 ## Contributing
 
