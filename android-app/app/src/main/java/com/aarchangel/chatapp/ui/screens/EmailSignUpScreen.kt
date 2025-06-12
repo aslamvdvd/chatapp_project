@@ -20,16 +20,26 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.aarchangel.chatapp.config.AppConfig
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.ui.theme.Dimens
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aarchangel.chatapp.data.network.dto.SignUpRequest
+import com.aarchangel.chatapp.viewmodel.EmailAuthViewModel
+import com.aarchangel.chatapp.viewmodel.ViewModelFactory
 
 @Composable
 fun EmailSignUpScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onSignUpSuccess: () -> Unit
 ) {
+    val factory = ViewModelFactory(LocalContext.current)
+    val viewModel: EmailAuthViewModel = viewModel(factory = factory)
+    val signUpState by viewModel.signUpState.collectAsState()
+
     var firstName by remember { mutableStateOf("") }
     var middleName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
@@ -41,6 +51,12 @@ fun EmailSignUpScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(signUpState.isSuccess) {
+        if (signUpState.isSuccess) {
+            onSignUpSuccess()
+        }
+    }
 
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
@@ -119,6 +135,7 @@ fun EmailSignUpScreen(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 label = { Text("Confirm Password*") },
+                isError = signUpState.fieldErrors?.containsKey("confirm_password") == true,
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -130,25 +147,44 @@ fun EmailSignUpScreen(
                 }
             )
 
+            signUpState.fieldErrors?.get("confirm_password")?.let {
+                Text(it.joinToString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+
             Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
 
             Button(
                 onClick = {
-                    val apiDob = try {
-                        val displayFormat = SimpleDateFormat("dd-mm-yyyy", Locale.getDefault())
-                        val apiFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        val date = displayFormat.parse(dob)
-                        date?.let { apiFormat.format(it) } ?: "Invalid date"
-                    } catch (e: Exception) {
-                        "Invalid date format"
-                    }
-                    Log.d("EmailSignUpScreen", "Account Creation data: email=$email, username=$username, dob_for_api=$apiDob")
+                    viewModel.signUp(
+                        SignUpRequest(
+                            email = email,
+                            username = username,
+                            firstName = firstName,
+                            middleName = middleName.ifEmpty { null },
+                            lastName = lastName,
+                            dateOfBirth = dob,
+                            gender = gender.ifEmpty { null },
+                            password = password,
+                            confirmPassword = confirmPassword
+                        )
+                    )
                 },
+                enabled = !signUpState.isLoading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Create Account")
+                if (signUpState.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Create Account")
+                }
             }
             
+            signUpState.error?.let {
+                if (signUpState.fieldErrors == null) {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
             TextButton(onClick = onNavigateBack) {
                 Text("Back")
             }
@@ -160,6 +196,6 @@ fun EmailSignUpScreen(
 @Composable
 fun EmailSignUpScreenPreview() {
     ChatAppTheme(darkTheme = true) {
-        EmailSignUpScreen(onNavigateBack = {})
+        EmailSignUpScreen(onNavigateBack = {}, onSignUpSuccess = {})
     }
 } 

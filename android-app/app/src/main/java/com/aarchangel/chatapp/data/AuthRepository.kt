@@ -1,6 +1,6 @@
 package com.aarchangel.chatapp.data
 
-import com.aarchangel.chatapp.network.AuthService
+import com.aarchangel.chatapp.data.network.AuthService
 
 class AuthRepository(
     private val authService: AuthService,

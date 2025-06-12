@@ -13,9 +13,19 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import com.aarchangel.chatapp.dto.LoginRequest
+import com.aarchangel.chatapp.dto.LoginResponse
+import com.aarchangel.chatapp.dto.UserProfileDto
+
+sealed class NetworkResult<out T> {
+    data class Success<out T>(val data: T) : NetworkResult<T>()
+    data class Error(val message: String? = null, val fieldErrors: Map<String, List<String>>? = null) : NetworkResult<Nothing>()
+}
 
 interface AuthService {
-    suspend fun signUp(request: SignUpRequest): Result<Unit> // Using Result for simplicity here, can be a custom sealed class
+    suspend fun signUp(request: SignUpRequest): Result<Unit>
+    suspend fun login(request: LoginRequest): NetworkResult<LoginResponse>
+    suspend fun getProfile(token: String): NetworkResult<UserProfileDto>
 }
 
 class AuthServiceImpl : AuthService {
@@ -67,6 +77,43 @@ class AuthServiceImpl : AuthService {
         } catch (e: Exception) {
             // Handle network errors or unexpected issues
             Result.failure(e)
+        }
+    }
+
+    override suspend fun login(request: LoginRequest): NetworkResult<LoginResponse> {
+        return try {
+            val response: HttpResponse = client.post("${BuildConfig.API_URL}/auth/login") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            
+            when (response.status.value) {
+                200 -> NetworkResult.Success(response.body())
+                400, 401 -> {
+                    val errorBody = response.body<ApiErrorResponse>()
+                    NetworkResult.Error(errorBody.message, errorBody.errors)
+                }
+                500 -> NetworkResult.Error("Server error. Please try again later.")
+                else -> NetworkResult.Error("An unknown error occurred.")
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error("Network error: ${e.message}")
+        }
+    }
+
+    override suspend fun getProfile(token: String): NetworkResult<UserProfileDto> {
+        return try {
+            val response: HttpResponse = client.get("${BuildConfig.API_URL}/auth/me") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+
+            when (response.status.value) {
+                200 -> NetworkResult.Success(response.body())
+                401 -> NetworkResult.Error("Unauthorized. Your session may have expired.")
+                else -> NetworkResult.Error("An unknown error occurred.")
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error("Network error: ${e.message}")
         }
     }
 }

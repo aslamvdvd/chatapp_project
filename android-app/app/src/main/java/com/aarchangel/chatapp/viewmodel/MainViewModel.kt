@@ -7,8 +7,8 @@ import com.aarchangel.chatapp.data.AuthRepository
 import com.aarchangel.chatapp.data.local.PreferenceManager
 import com.aarchangel.chatapp.dto.UserProfileDto
 import com.aarchangel.chatapp.model.SessionState
-import com.aarchangel.chatapp.network.AuthService
-import com.aarchangel.chatapp.network.NetworkResult
+import com.aarchangel.chatapp.data.network.AuthService
+import com.aarchangel.chatapp.data.network.NetworkResult
 import com.aarchangel.chatapp.navigation.AppScreen
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

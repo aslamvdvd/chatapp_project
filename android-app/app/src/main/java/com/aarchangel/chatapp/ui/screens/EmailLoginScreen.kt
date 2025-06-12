@@ -16,16 +16,33 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import com.aarchangel.chatapp.config.AppConfig
+import com.aarchangel.chatapp.dto.LoginRequest
+import com.aarchangel.chatapp.viewmodel.LoginViewModel
+import com.aarchangel.chatapp.viewmodel.ViewModelFactory
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.ui.theme.Dimens
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun EmailLoginScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onLoginSuccess: () -> Unit
 ) {
+    val factory = ViewModelFactory(LocalContext.current)
+    val viewModel: LoginViewModel = viewModel(factory = factory)
+    val loginState by viewModel.loginState.collectAsState()
+
     var emailOrUsername by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.loginEvent.collect {
+            onLoginSuccess()
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -51,8 +68,13 @@ fun EmailLoginScreen(
                 value = emailOrUsername,
                 onValueChange = { emailOrUsername = it },
                 label = { Text("Email or Username") },
+                isError = loginState.fieldErrors?.containsKey("email_or_username") == true,
                 modifier = Modifier.fillMaxWidth()
             )
+            
+            loginState.fieldErrors?.get("email_or_username")?.let {
+                Text(it.joinToString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
             
             Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
 
@@ -60,6 +82,7 @@ fun EmailLoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
+                isError = loginState.fieldErrors?.containsKey("password") == true,
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -70,16 +93,36 @@ fun EmailLoginScreen(
                     }
                 }
             )
+            
+            loginState.fieldErrors?.get("password")?.let {
+                Text(it.joinToString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
 
             Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
 
             Button(
                 onClick = {
-                    Log.d("EmailLoginScreen", "Login attempt: user=$emailOrUsername")
+                    viewModel.login(
+                        LoginRequest(
+                            emailOrUsername = emailOrUsername,
+                            password = password
+                        )
+                    )
                 },
+                enabled = !loginState.isLoading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Login")
+                if (loginState.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Login")
+                }
+            }
+
+            loginState.error?.let {
+                if (loginState.fieldErrors == null) {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.padding(top = Dimens.PaddingSmall))
+                }
             }
 
             TextButton(onClick = onNavigateBack) {
@@ -93,6 +136,6 @@ fun EmailLoginScreen(
 @Composable
 fun EmailLoginScreenPreview() {
     ChatAppTheme(darkTheme = true) {
-        EmailLoginScreen(onNavigateBack = {})
+        EmailLoginScreen(onNavigateBack = {}, onLoginSuccess = {})
     }
 } 

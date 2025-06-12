@@ -20,8 +20,8 @@ import com.aarchangel.chatapp.data.AuthRepository
 import com.aarchangel.chatapp.data.TokenStorage
 import com.aarchangel.chatapp.data.local.PreferenceManager
 import com.aarchangel.chatapp.navigation.AppScreen
-import com.aarchangel.chatapp.network.AuthService
-import com.aarchangel.chatapp.network.AuthServiceImpl
+import com.aarchangel.chatapp.data.network.AuthService
+import com.aarchangel.chatapp.data.network.AuthServiceImpl
 import com.aarchangel.chatapp.ui.screens.AuthEntryScreen
 import com.aarchangel.chatapp.ui.screens.EmailLoginScreen
 import com.aarchangel.chatapp.ui.screens.EmailSignUpScreen
@@ -120,10 +120,26 @@ fun ChatAppNavigation(mainViewModel: MainViewModel) {
             )
         }
         composable(AppScreen.EmailSignUp.route) {
-            EmailSignUpScreen(onNavigateBack = { navController.popBackStack() })
+            EmailSignUpScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onSignUpSuccess = {
+                    navController.navigate(AppScreen.EmailLogin.route) {
+                        popUpTo(AppScreen.AuthEntry.route)
+                    }
+                }
+            )
         }
         composable(AppScreen.EmailLogin.route) {
-            EmailLoginScreen(onNavigateBack = { navController.popBackStack() })
+            EmailLoginScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onLoginSuccess = {
+                    navController.navigate(AppScreen.Home.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
         }
         composable(AppScreen.Home.route) {
             HomeScreen(mainViewModel = mainViewModel)
