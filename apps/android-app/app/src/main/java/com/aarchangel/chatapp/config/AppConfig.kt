@@ -15,6 +15,8 @@ object AppConfig {
     const val ONE_ON_ONE_CHAT_NAME = "Private Chat"
     /** Name for group chat features. */
     const val GROUP_CHAT_NAME = "Circle Chat"
+    /** Label for the Friends tab in the bottom navigation. */
+    const val FRIENDS_TAB_LABEL = "Friends"
     /** Default theme preference (e.g., "dark", "light", "system"). */
     const val DEFAULT_THEME = "dark"
     /** Flag to enable or disable guest mode. Currently not supported. */

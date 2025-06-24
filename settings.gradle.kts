@@ -8,4 +8,4 @@ pluginManagement {
 
 rootProject.name = "ChatAppProjectRoot"
 
-includeBuild("android-app") 
+includeBuild("apps/android-app") 

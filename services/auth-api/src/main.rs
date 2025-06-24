@@ -22,8 +22,7 @@ use crate::core::app_state::AppState;
 use crate::core::feature_flags::FeatureFlags;
 use crate::handlers::health_handler::{db_health_check, health_check};
 use crate::logging::init_logging;
-use crate::routes::admin_routes::configure_admin_routes;
-use crate::routes::auth::configure_auth_routes;
+use crate::routes::init_routes;
 use crate::services::auth_service::AuthService;
 
 /// Main function to set up and run the Actix web server.
@@ -108,8 +107,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-doc/openapi.json", openapi.clone()),
             )
-            .configure(configure_auth_routes)
-            .configure(configure_admin_routes)
+            .configure(init_routes)
             .service(health_check)
             .service(db_health_check)
     })

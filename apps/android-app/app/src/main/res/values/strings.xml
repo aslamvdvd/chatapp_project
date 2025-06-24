@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">GhostTalk</string>
+    <string name="app_name">ChatApp</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="user_profile_picture_description">User profile picture</string>
+    <string name="search_content_description">Search</string>
+    <string name="more_options_content_description">More options</string>
 </resources> 

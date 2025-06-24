@@ -22,17 +22,23 @@ import com.aarchangel.chatapp.data.local.PreferenceManager
 import com.aarchangel.chatapp.navigation.AppScreen
 import com.aarchangel.chatapp.data.network.AuthService
 import com.aarchangel.chatapp.data.network.AuthServiceImpl
-import com.aarchangel.chatapp.ui.screens.AuthEntryScreen
-import com.aarchangel.chatapp.ui.screens.EmailLoginScreen
-import com.aarchangel.chatapp.ui.screens.EmailSignUpScreen
-import com.aarchangel.chatapp.ui.screens.HomeScreen
-import com.aarchangel.chatapp.ui.screens.LoginMethodScreen
-import com.aarchangel.chatapp.ui.screens.SignUpMethodScreen
-import com.aarchangel.chatapp.ui.screens.SplashScreen
-import com.aarchangel.chatapp.ui.screens.WelcomeScreen
+import com.aarchangel.chatapp.ui.screens.MainScreen
+import com.aarchangel.chatapp.ui.screens.auth.AuthEntryScreen
+import com.aarchangel.chatapp.ui.screens.auth.EmailLoginScreen
+import com.aarchangel.chatapp.ui.screens.auth.EmailSignUpScreen
+import com.aarchangel.chatapp.ui.screens.auth.LoginMethodScreen
+import com.aarchangel.chatapp.ui.screens.auth.SignUpMethodScreen
+import com.aarchangel.chatapp.ui.screens.home.HomeScreen
+import com.aarchangel.chatapp.ui.screens.search.SearchScreen
+import com.aarchangel.chatapp.ui.screens.splash.SplashScreen
+import com.aarchangel.chatapp.ui.screens.welcome.WelcomeScreen
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.viewmodel.MainViewModel
+import com.aarchangel.chatapp.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aarchangel.chatapp.ui.screens.search.SearchViewModel
 
 class MainActivity : ComponentActivity() {
     private val authService: AuthService by lazy { AuthServiceImpl() }
@@ -143,16 +149,14 @@ fun ChatAppNavigation(mainViewModel: MainViewModel) {
             )
         }
         composable(AppScreen.Home.route) {
-            HomeScreen(
-                mainViewModel = mainViewModel,
-                onLogout = {
-                    navController.navigate(AppScreen.AuthEntry.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            inclusive = true
-                        }
-                    }
-                }
+            MainScreen(
+                onNavigateToSearch = { navController.navigate(AppScreen.Search.route) }
             )
+        }
+        composable(AppScreen.Search.route) {
+            val factory = ViewModelFactory(LocalContext.current)
+            val searchViewModel: SearchViewModel = viewModel(factory = factory)
+            SearchScreen(searchViewModel = searchViewModel)
         }
     }
 }

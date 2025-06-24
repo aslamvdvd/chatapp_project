@@ -1,4 +1,4 @@
-package com.aarchangel.chatapp.ui.screens
+package com.aarchangel.chatapp.ui.screens.auth
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
@@ -18,11 +18,9 @@ import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.ui.theme.Dimens
 
 @Composable
-fun SignUpMethodScreen(
-    onContinueWithPhone: () -> Unit,
-    onContinueWithEmail: () -> Unit,
-    onContinueWithGoogle: () -> Unit,
-    onContinueWithApple: () -> Unit,
+fun AuthEntryScreen(
+    onNavigateToSignUp: () -> Unit,
+    onNavigateToLogin: () -> Unit,
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -49,53 +47,32 @@ fun SignUpMethodScreen(
 
             Spacer(modifier = Modifier.height(Dimens.PaddingHuge))
 
-            Text(
-                text = "Sign Up",
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = Dimens.PaddingLarge)
-            )
+            Button(
+                onClick = onNavigateToSignUp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Sign Up")
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
 
             Button(
-                onClick = onContinueWithPhone,
+                onClick = onNavigateToLogin,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "Continue with Phone Number")
-            }
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-            Button(
-                onClick = onContinueWithEmail,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "Continue with Email Address")
-            }
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-            Button(
-                onClick = onContinueWithGoogle,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "Continue with Google")
-            }
-            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-            Button(
-                onClick = onContinueWithApple,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "Continue with Apple")
+                Text(text = "Log In")
             }
         }
     }
 }
 
-@Preview(showBackground = true, name = "Sign Up Method Screen")
+@Preview(showBackground = true, name = "Auth Entry Screen")
 @Composable
-fun SignUpMethodScreenPreview() {
+fun AuthEntryScreenPreview() {
     ChatAppTheme(darkTheme = true) {
-        SignUpMethodScreen(
-            onContinueWithPhone = { Log.d("SignUpMethodScreen", "Continue with Phone clicked") },
-            onContinueWithEmail = { Log.d("SignUpMethodScreen", "Continue with Email clicked") },
-            onContinueWithGoogle = { Log.d("SignUpMethodScreen", "Continue with Google clicked") },
-            onContinueWithApple = { Log.d("SignUpMethodScreen", "Continue with Apple clicked") }
+        AuthEntryScreen(
+            onNavigateToSignUp = { Log.d("AuthEntryScreen", "Sign Up clicked") },
+            onNavigateToLogin = { Log.d("AuthEntryScreen", "Log In clicked") }
         )
     }
 } 

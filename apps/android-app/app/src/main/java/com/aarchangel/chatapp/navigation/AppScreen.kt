@@ -47,4 +47,9 @@ sealed class AppScreen(val route: String) {
      * Represents the Home screen, the main screen after authentication.
      */
     object Home : AppScreen("home")
+
+    /**
+     * Represents the global search screen.
+     */
+    object Search : AppScreen("search")
 }

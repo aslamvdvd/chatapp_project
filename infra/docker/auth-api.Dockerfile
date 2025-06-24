@@ -3,19 +3,26 @@ FROM rust:slim as builder
 
 WORKDIR /usr/src/app
 
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 # Install build dependencies
 # Needed for some crates that link against C libraries (e.g., openssl-sys, some database drivers)
 # Adding `curl` for the utoipa-swagger-ui build script.
 RUN apt-get update && apt-get install -y libssl-dev pkg-config curl && rm -rf /var/lib/apt/lists/*
 
-# Install cargo-watch
-RUN cargo install cargo-watch
+# Add cargo bin to path
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install cargo-watch and sqlx-cli
+RUN cargo install cargo-watch sqlx-cli
 
 # Copy the entire backend source code
 COPY . .
 
 # Build the release binary.
 # This step benefits from cached Docker layers if dependencies in Cargo.toml haven't changed.
+ENV SQLX_OFFLINE=true 
 RUN cargo build --release
 
 # Stage 2: Runtime
@@ -23,6 +30,9 @@ RUN cargo build --release
 FROM debian:bookworm-slim
 
 WORKDIR /app
+
+# Add cargo bin to path for runtime
+ENV PATH="/root/.cargo/bin:/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 # Install runtime dependencies (libssl3 and ca-certificates)
 RUN apt-get update && apt-get install -y libssl3 ca-certificates && rm -rf /var/lib/apt/lists/*
@@ -39,6 +49,9 @@ RUN apt-get update && apt-get install -y libssl3 ca-certificates && rm -rf /var/
 # as AppConfig.toml or direct env var reading in Rust would be used.
 # For now, keeping the COPY of .env.template as .env as per original plan.
 COPY --from=builder /usr/src/app/.env.template .env
+
+# Copy the migrations directory
+COPY --from=builder /usr/src/app/migrations ./migrations
 
 # Copy only the built binary from the builder stage.
 COPY --from=builder /usr/src/app/target/release/chatapp_by_aarchangel_backend .

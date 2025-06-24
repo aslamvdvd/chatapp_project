@@ -245,7 +245,7 @@ impl AuthService {
         email_or_username: &str,
     ) -> Result<UserAuthDetails, AuthServiceError> {
         let user_details = sqlx::query_as::<_, UserAuthDetails>(
-            "SELECT id, password_hash, role FROM users WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)"
+            "SELECT id, password_hash, role FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) OR LOWER(TRIM(username)) = LOWER(TRIM($1))"
         )
         .bind(email_or_username)
         .fetch_optional(&self.db_pool)

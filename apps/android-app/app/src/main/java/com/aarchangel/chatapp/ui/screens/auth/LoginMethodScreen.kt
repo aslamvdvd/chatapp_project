@@ -1,4 +1,4 @@
-package com.aarchangel.chatapp.ui.screens
+package com.aarchangel.chatapp.ui.screens.auth
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
@@ -18,9 +18,11 @@ import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.ui.theme.Dimens
 
 @Composable
-fun AuthEntryScreen(
-    onNavigateToSignUp: () -> Unit,
-    onNavigateToLogin: () -> Unit,
+fun LoginMethodScreen(
+    onContinueWithPhone: () -> Unit,
+    onContinueWithEmail: () -> Unit,
+    onContinueWithGoogle: () -> Unit,
+    onContinueWithApple: () -> Unit,
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -47,32 +49,54 @@ fun AuthEntryScreen(
 
             Spacer(modifier = Modifier.height(Dimens.PaddingHuge))
 
+            Text(
+                text = "Log In",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = Dimens.PaddingLarge)
+            )
+
+            
             Button(
-                onClick = onNavigateToSignUp,
+                onClick = onContinueWithPhone,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "Sign Up")
+                Text(text = "Continue with Phone Number")
             }
-
             Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-
             Button(
-                onClick = onNavigateToLogin,
+                onClick = onContinueWithEmail,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "Log In")
+                Text(text = "Continue with Email Address")
+            }
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+            Button(
+                onClick = onContinueWithGoogle,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Continue with Google")
+            }
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
+            Button(
+                onClick = onContinueWithApple,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Continue with Apple")
             }
         }
     }
 }
 
-@Preview(showBackground = true, name = "Auth Entry Screen")
+@Preview(showBackground = true, name = "Login Method Screen")
 @Composable
-fun AuthEntryScreenPreview() {
+fun LoginMethodScreenPreview() {
     ChatAppTheme(darkTheme = true) {
-        AuthEntryScreen(
-            onNavigateToSignUp = { Log.d("AuthEntryScreen", "Sign Up clicked") },
-            onNavigateToLogin = { Log.d("AuthEntryScreen", "Log In clicked") }
+        LoginMethodScreen(
+            onContinueWithPhone = { Log.d("LoginMethodScreen", "Continue with Phone clicked") },
+            onContinueWithEmail = { Log.d("LoginMethodScreen", "Continue with Email clicked") },
+            onContinueWithGoogle = { Log.d("LoginMethodScreen", "Continue with Google clicked") },
+            onContinueWithApple = { Log.d("LoginMethodScreen", "Continue with Apple clicked") }
         )
     }
 } 

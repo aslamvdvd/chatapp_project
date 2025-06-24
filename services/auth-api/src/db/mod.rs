@@ -1,6 +1,7 @@
 // Placeholder for db.rs (PostgreSQL pool setup)
 
-use sqlx::postgres::{PgPool, PgPoolOptions};
+pub use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use std::env;
 
 /// Establishes a connection pool to the PostgreSQL database.

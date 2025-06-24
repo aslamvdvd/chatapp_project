@@ -1,4 +1,4 @@
-package com.aarchangel.chatapp.ui.screens
+package com.aarchangel.chatapp.ui.screens.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions

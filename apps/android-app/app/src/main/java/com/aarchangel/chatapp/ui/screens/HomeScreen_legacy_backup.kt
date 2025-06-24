@@ -53,6 +53,7 @@ fun HomeScreen(
                 else -> {
                     // This space is intentionally left blank to avoid showing a "Loading..."
                     // message during the brief moment of logging out before navigation occurs.
+                    
                 }
             }
         }

@@ -1,4 +1,4 @@
-package com.aarchangel.chatapp.ui.screens
+package com.aarchangel.chatapp.ui.screens.welcome
 
 import android.util.Log
 import androidx.compose.foundation.layout.*

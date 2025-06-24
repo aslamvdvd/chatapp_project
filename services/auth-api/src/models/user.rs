@@ -159,6 +159,15 @@ pub struct UserInfoResponse {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct UserProfile {
+    pub id: Uuid,
+    pub username: String,
+    pub email: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
 impl From<User> for UserPublicData {
     fn from(user: User) -> Self {
         UserPublicData {

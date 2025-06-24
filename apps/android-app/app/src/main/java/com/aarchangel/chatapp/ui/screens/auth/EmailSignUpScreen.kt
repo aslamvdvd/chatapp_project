@@ -1,4 +1,4 @@
-package com.aarchangel.chatapp.ui.screens
+package com.aarchangel.chatapp.ui.screens.auth
 
 import android.app.DatePickerDialog
 import android.util.Log
@@ -31,6 +31,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aarchangel.chatapp.data.network.dto.SignUpRequest
+import com.aarchangel.chatapp.ui.screens.auth.components.DateVisualTransformation
 import com.aarchangel.chatapp.viewmodel.EmailAuthViewModel
 import com.aarchangel.chatapp.viewmodel.ViewModelFactory
 import androidx.compose.ui.focus.FocusDirection

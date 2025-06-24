@@ -1,4 +1,4 @@
-package com.aarchangel.chatapp.ui.screens
+package com.aarchangel.chatapp.ui.screens.auth
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
@@ -18,7 +18,7 @@ import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.ui.theme.Dimens
 
 @Composable
-fun LoginMethodScreen(
+fun SignUpMethodScreen(
     onContinueWithPhone: () -> Unit,
     onContinueWithEmail: () -> Unit,
     onContinueWithGoogle: () -> Unit,
@@ -50,13 +50,12 @@ fun LoginMethodScreen(
             Spacer(modifier = Modifier.height(Dimens.PaddingHuge))
 
             Text(
-                text = "Log In",
+                text = "Sign Up",
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = Dimens.PaddingLarge)
             )
 
-            
             Button(
                 onClick = onContinueWithPhone,
                 modifier = Modifier.fillMaxWidth()
@@ -88,15 +87,15 @@ fun LoginMethodScreen(
     }
 }
 
-@Preview(showBackground = true, name = "Login Method Screen")
+@Preview(showBackground = true, name = "Sign Up Method Screen")
 @Composable
-fun LoginMethodScreenPreview() {
+fun SignUpMethodScreenPreview() {
     ChatAppTheme(darkTheme = true) {
-        LoginMethodScreen(
-            onContinueWithPhone = { Log.d("LoginMethodScreen", "Continue with Phone clicked") },
-            onContinueWithEmail = { Log.d("LoginMethodScreen", "Continue with Email clicked") },
-            onContinueWithGoogle = { Log.d("LoginMethodScreen", "Continue with Google clicked") },
-            onContinueWithApple = { Log.d("LoginMethodScreen", "Continue with Apple clicked") }
+        SignUpMethodScreen(
+            onContinueWithPhone = { Log.d("SignUpMethodScreen", "Continue with Phone clicked") },
+            onContinueWithEmail = { Log.d("SignUpMethodScreen", "Continue with Email clicked") },
+            onContinueWithGoogle = { Log.d("SignUpMethodScreen", "Continue with Google clicked") },
+            onContinueWithApple = { Log.d("SignUpMethodScreen", "Continue with Apple clicked") }
         )
     }
 } 

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE friend_requests\n        SET status = 'accepted', updated_at = NOW()\n        WHERE id = $1 AND receiver_id = $2 AND status = 'pending'\n        RETURNING sender_id, receiver_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "sender_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "receiver_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "413df4730586faec2816680dc31b9b751e0ea9ea4d445f1927ae5c6b2a0af720"
+}

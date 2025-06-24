@@ -41,6 +41,13 @@ prune: # More aggressive, includes unused volumes defined in compose but not nam
 	docker system prune --all --force --volumes
 
 ## Database specific commands
+db-recreate:
+	@echo "Forcibly stopping and removing the database container and its named volume..."
+	docker compose stop db
+	docker compose rm -f db
+	docker volume rm chatapp_project_pgdata || true
+	@echo "Database volume wiped. You can now run 'make up'."
+
 db-shell:
 	@echo "Connecting to PostgreSQL shell in the db container (using .env for credentials)..."
 	docker compose exec db psql -U $$(grep POSTGRES_USER .env | cut -d '=' -f2) -d $$(grep POSTGRES_DB .env | cut -d '=' -f2)
@@ -73,6 +80,7 @@ help:
 	@echo "  make db-logs          - Follow logs for the db service"
 	@echo "  make ps               - List running services"
 	@echo "  make db-shell         - Connect to PostgreSQL shell in the db container (reads .env for user/db)"
+	@echo "  make db-recreate      - Forcefully removes the database and its data volume to allow for a clean start."
 	@echo "  make clean            - Stop services and prune unused Docker objects (images, networks, build cache)"
 	@echo "  make prune            - Aggressively stop services and prune Docker objects (includes unused volumes)"
 	@echo ""

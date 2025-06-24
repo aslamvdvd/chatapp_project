@@ -24,7 +24,6 @@ services:
     build:
       context: ./services/auth-api
       dockerfile: ../../infra/docker/auth-api.Dockerfile
-      target: builder
     container_name: ghosttalk_auth_api
     mem_limit: 2g
     dns:
@@ -47,7 +46,7 @@ services:
       JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES}
       FEATURE_SIGNUP_ENABLED: ${FEATURE_SIGNUP_ENABLED:-true}
       FEATURE_LOGIN_ENABLED: ${FEATURE_LOGIN_ENABLED:-true}
-    command: ["cargo", "watch", "-c", "-w", "src", "-w", "Cargo.toml", "--poll", "--delay", "1", "-s", "sh -c 'stdbuf -oL cargo run --bin chatapp_by_aarchangel_backend'"]
+    command: ["./chatapp_by_aarchangel_backend"]
     restart: unless-stopped
     labels:
       - "com.ghosttalk.description=GhostTalk Auth API"
