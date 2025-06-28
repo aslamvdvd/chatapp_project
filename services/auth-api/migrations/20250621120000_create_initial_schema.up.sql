@@ -1,5 +1,8 @@
 -- Create initial database schema
 
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Enum for user roles
 CREATE TYPE user_role AS ENUM ('user', 'admin');
 
@@ -16,12 +19,13 @@ CREATE TABLE IF NOT EXISTS users (
     gender VARCHAR(255),
     role user_role NOT NULL DEFAULT 'user',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_private_profile BOOLEAN NOT NULL DEFAULT false
 );
 
 -- Enum for friend request status
 DO $$ BEGIN
-    CREATE TYPE friend_request_status AS ENUM ('pending', 'accepted', 'rejected');
+    CREATE TYPE friend_request_status AS ENUM ('pending', 'accepted', 'rejected', 'cancelled');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;

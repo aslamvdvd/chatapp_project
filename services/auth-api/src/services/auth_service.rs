@@ -1,48 +1,41 @@
-// Placeholder for auth_service.rs
-
 use crate::core::rbac::Role;
-use crate::models::auth::{LoginRequest, LoginResponse};
-use crate::models::user::{SignupUserDto, User, UserInfoResponse, UserPublicData};
+use crate::models::{
+    auth::{LoginRequest, LoginResponse},
+    user::{SignupUserDto, UserInfoResponse, UserProfile},
+};
+use crate::utils::jwt::generate_jwt;
 use crate::utils::hash::{hash_password, verify_password};
-use crate::utils::jwt::{generate_jwt, JwtError};
-use chrono::{NaiveDate, Utc};
 use sqlx::PgPool;
-use std::collections::HashMap;
 use uuid::Uuid;
+use chrono::NaiveDate;
 
 /// Service layer error types.
 #[derive(Debug, thiserror::Error)]
 pub enum AuthServiceError {
-    #[error("Validation failed: {0:?}")]
-    Validation(HashMap<String, Vec<String>>),
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
-    #[error("Password hashing failed: {0}")]
+    #[error("Password hashing error: {0}")]
     PasswordHashing(String),
-    #[error("Invalid date format for date_of_birth: {0}")]
-    InvalidDateFormat(String),
-    #[error("An unexpected error occurred: {0}")]
-    Unexpected(String),
-
-    // Errors for login
-    #[error("User not found.")]
-    UserNotFound,
-    #[error("Invalid credentials.")]
+    #[error("Invalid credentials")]
     InvalidCredentials,
-    #[error("JWT generation failed: {0}")]
-    JwtGeneration(#[from] JwtError),
-    #[error("Password verification failed: {0}")]
-    PasswordVerification(String),
+    #[error("User already exists")]
+    UserExists,
+    #[error("JWT error: {0}")]
+    Jwt(String),
+    #[error("Invalid date format: {0}")]
+    InvalidDateFormat(String),
 }
 
-// Helper struct to fetch user details for authentication
-#[derive(sqlx::FromRow)]
-struct UserAuthDetails {
-    id: Uuid,
-    password_hash: String,
-    role: Role,
-    // email: String, // Potentially useful for context, but not strictly needed for auth logic
-    // username: String, // Same as above
+impl From<argon2::Error> for AuthServiceError {
+    fn from(err: argon2::Error) -> Self {
+        AuthServiceError::PasswordHashing(err.to_string())
+    }
+}
+
+impl From<Box<dyn std::error::Error>> for AuthServiceError {
+    fn from(err: Box<dyn std::error::Error>) -> Self {
+        AuthServiceError::PasswordHashing(err.to_string())
+    }
 }
 
 /// `AuthService` provides methods for authentication related business logic.
@@ -56,8 +49,8 @@ impl AuthService {
     ///
     /// # Arguments
     /// * `db_pool` - A `PgPool` for database connections.
-    pub fn new(db_pool: PgPool) -> Self {
-        Self { db_pool }
+    pub fn new(pool: PgPool) -> Self {
+        Self { db_pool: pool }
     }
 
     /// Handles user signup.
@@ -70,104 +63,73 @@ impl AuthService {
     ///
     /// # Returns
     /// A `Result` containing `UserPublicData` on success, or `AuthServiceError` on failure.
-    pub async fn signup_user(
-        &self,
-        signup_data: SignupUserDto,
-    ) -> Result<UserPublicData, AuthServiceError> {
-        // 1. Validate input (confirm_password is implicitly validated by `must_match`)
-        // The validator crate handles this at the DTO deserialization level or handler level.
-        // Here, we assume it has been validated by the handler or Actix extractor.
+    pub async fn signup(&self, signup_data: SignupUserDto) -> Result<UserProfile, AuthServiceError> {
+        // Check if user exists
+        let existing_user = sqlx::query!(
+            r#"
+            SELECT id FROM users 
+            WHERE email = $1 OR username = $2
+            "#,
+            signup_data.email,
+            signup_data.username
+        )
+        .fetch_optional(&self.db_pool)
+        .await?;
 
-        // 2. Parse date_of_birth
-        let dob = NaiveDate::parse_from_str(&signup_data.date_of_birth, "%Y-%m-%d")
+        if existing_user.is_some() {
+            return Err(AuthServiceError::UserExists);
+        }
+
+        let password_hash = hash_password(&signup_data.password)
+            .map_err(|e| AuthServiceError::PasswordHashing(e.to_string()))?;
+
+        let date_of_birth = NaiveDate::parse_from_str(&signup_data.date_of_birth, "%Y-%m-%d")
             .map_err(|e| AuthServiceError::InvalidDateFormat(e.to_string()))?;
 
-        // 3. Hash password
-        let password_hash =
-            hash_password(&signup_data.password).map_err(AuthServiceError::PasswordHashing)?;
-
-        // 4. Start a database transaction
-        let mut tx = self
-            .db_pool
-            .begin()
-            .await
-            .map_err(AuthServiceError::Database)?;
-
-        // 5. Check for existing email or username
-        let email_exists: (bool,) =
-            sqlx::query_as("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)")
-                .bind(&signup_data.email)
-                .fetch_one(&mut *tx)
-                .await?;
-        if email_exists.0 {
-            let mut errors = HashMap::new();
-            errors.insert(
-                "email".to_string(),
-                vec!["Email already exists.".to_string()],
-            );
-            return Err(AuthServiceError::Validation(errors));
-        }
-
-        let username_exists: (bool,) =
-            sqlx::query_as("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
-                .bind(&signup_data.username)
-                .fetch_one(&mut *tx)
-                .await?;
-        if username_exists.0 {
-            let mut errors = HashMap::new();
-            errors.insert(
-                "username".to_string(),
-                vec!["Username already exists.".to_string()],
-            );
-            return Err(AuthServiceError::Validation(errors));
-        }
-
-        // 6. Create new user
-        let new_user_id = Uuid::new_v4();
-        let now = Utc::now();
-        let default_role = Role::default();
-
-        let result = sqlx::query(
-            "INSERT INTO users (id, email, username, password_hash, first_name, middle_name, last_name, date_of_birth, gender, role, created_at, updated_at) \n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)"
+        let user = sqlx::query_as!(
+            UserProfile,
+            r#"
+            INSERT INTO users (username, email, password_hash, first_name, last_name, date_of_birth)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id, username, email, created_at, updated_at
+            "#,
+            signup_data.username,
+            signup_data.email,
+            password_hash,
+            signup_data.first_name,
+            signup_data.last_name,
+            date_of_birth
         )
-        .bind(new_user_id)
-        .bind(&signup_data.email)
-        .bind(&signup_data.username)
-        .bind(&password_hash)
-        .bind(&signup_data.first_name)
-        .bind(signup_data.middle_name.as_ref())
-        .bind(&signup_data.last_name)
-        .bind(dob)
-        .bind(signup_data.gender.as_ref())
-        .bind(default_role)
-        .bind(now)
-        .bind(now)
-        .execute(&mut *tx)
-        .await;
+        .fetch_one(&self.db_pool)
+        .await?;
 
-        match result {
-            Ok(_) => {
-                tx.commit().await.map_err(AuthServiceError::Database)?;
+        Ok(user)
+    }
 
-                // TODO: Send verification email
+    pub async fn verify_credentials(&self, email: &str, password: &str) -> Result<UserProfile, AuthServiceError> {
+        let user = sqlx::query_as!(
+            UserProfile,
+            r#"
+            SELECT id, username, email, created_at, updated_at
+            FROM users
+            WHERE email = $1
+            "#,
+            email
+        )
+        .fetch_optional(&self.db_pool)
+        .await?
+        .ok_or(AuthServiceError::InvalidCredentials)?;
 
-                Ok(UserPublicData {
-                    id: new_user_id,
-                    email: signup_data.email,
-                    username: signup_data.username,
-                    first_name: signup_data.first_name,
-                    middle_name: signup_data.middle_name,
-                    last_name: signup_data.last_name,
-                    date_of_birth: signup_data.date_of_birth,
-                    gender: signup_data.gender,
-                    role: default_role,
-                    created_at: now,
-                })
-            }
-            Err(e) => {
-                let _ = tx.rollback().await;
-                Err(AuthServiceError::Database(e))
-            }
+        let stored_hash = sqlx::query_scalar!(
+            "SELECT password_hash FROM users WHERE id = $1",
+            user.id
+        )
+        .fetch_one(&self.db_pool)
+        .await?;
+
+        match verify_password(password, &stored_hash) {
+            Ok(true) => Ok(user),
+            Ok(false) | Err(_) => Err(AuthServiceError::InvalidCredentials),
         }
     }
 
@@ -181,32 +143,34 @@ impl AuthService {
     ///
     /// # Returns
     /// A `Result` containing `LoginResponse` on success, or `AuthServiceError` on failure.
-    pub async fn login_user(
-        &self,
-        login_data: LoginRequest,
-    ) -> Result<LoginResponse, AuthServiceError> {
-        // Step 1: Find the user by email or username
-        let user_details = self
-            .find_user_by_email_or_username(&login_data.email_or_username)
-            .await?;
+    pub async fn login(&self, login_data: LoginRequest) -> Result<LoginResponse, AuthServiceError> {
+        let mut tx = self.db_pool.begin().await?;
 
-        // Step 2: Verify the password
-        match verify_password(&login_data.password, &user_details.password_hash) {
-            Ok(_) => (), // Password is valid
-            Err(argon2::password_hash::Error::Password) => {
-                return Err(AuthServiceError::InvalidCredentials);
-            }
-            Err(e) => {
-                // This could be a malformed hash in DB or other argon2 error
-                tracing::error!(target: "system_events", "Password verification failed with unexpected error: {}", e);
-                return Err(AuthServiceError::PasswordVerification(e.to_string()));
-            }
-        };
+        let user = sqlx::query_as!(
+            UserProfile,
+            r#"
+            SELECT id, username, email, created_at, updated_at
+            FROM users 
+            WHERE email = $1 OR username = $1
+            "#,
+            login_data.email_or_username
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or(AuthServiceError::InvalidCredentials)?;
 
-        // Step 3: Generate JWT
-        let token = generate_jwt(user_details.id, user_details.role)
-            .map_err(AuthServiceError::JwtGeneration)?;
+        let stored_hash: String = sqlx::query_scalar!(
+            "SELECT password_hash FROM users WHERE id = $1",
+            user.id
+        )
+        .fetch_one(&mut *tx)
+        .await?;
 
+        if !verify_password(&login_data.password, &stored_hash)? {
+            return Err(AuthServiceError::InvalidCredentials);
+        }
+
+        let token = generate_jwt(user.id, Role::User).map_err(|e| AuthServiceError::Jwt(e.to_string()))?;
         Ok(LoginResponse {
             access_token: token,
             token_type: "Bearer".to_string(),
@@ -220,46 +184,20 @@ impl AuthService {
     ///
     /// # Returns
     /// A `Result` containing the `UserInfoResponse` or an `AuthServiceError`.
-    pub async fn get_user_profile(
-        &self,
-        user_id: Uuid,
-    ) -> Result<UserInfoResponse, AuthServiceError> {
-        let user = sqlx::query_as::<_, User>(
-            "SELECT id, email, username, password_hash, first_name, middle_name, last_name, date_of_birth, gender, role, created_at, updated_at FROM users WHERE id = $1",
+    pub async fn get_user_by_id(&self, user_id: Uuid) -> Result<UserInfoResponse, AuthServiceError> {
+        let user = sqlx::query_as!(
+            UserInfoResponse,
+            r#"
+            SELECT id, username, email, first_name, middle_name, last_name, created_at
+            FROM users
+            WHERE id = $1
+            "#,
+            user_id
         )
-        .bind(user_id)
         .fetch_optional(&self.db_pool)
-        .await
-        .map_err(AuthServiceError::Database)?;
+        .await?
+        .ok_or(AuthServiceError::InvalidCredentials)?;
 
-        match user {
-            Some(u) => Ok(u.into()),
-            None => Err(AuthServiceError::UserNotFound),
-        }
-    }
-
-    /// Helper function to find a user by their email or username.
-    /// This is used internally by the login process.
-    async fn find_user_by_email_or_username(
-        &self,
-        email_or_username: &str,
-    ) -> Result<UserAuthDetails, AuthServiceError> {
-        let user_details = sqlx::query_as::<_, UserAuthDetails>(
-            "SELECT id, password_hash, role FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) OR LOWER(TRIM(username)) = LOWER(TRIM($1))"
-        )
-        .bind(email_or_username)
-        .fetch_optional(&self.db_pool)
-        .await?;
-
-        match user_details {
-            Some(u) => Ok(u),
-            None => Err(AuthServiceError::UserNotFound),
-        }
+        Ok(user)
     }
 }
-
-// Note: For sqlx::query_as to work with (bool,), you might need to derive FromRow for it
-// or use a more explicit type that sqlx can map to. Often, a simple struct works best.
-// For example: struct Exists { exists: bool; }
-// However, for a single boolean, sqlx often handles it with a tuple if the DB returns one column.
-// If issues arise, use `

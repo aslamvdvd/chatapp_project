@@ -1,7 +1,7 @@
 // backend/src/config.rs
 
-use dotenvy::dotenv;
 use std::env;
+use dotenv::dotenv;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -17,7 +17,7 @@ impl Config {
             .unwrap_or_else(|_| "8080".to_string())
             .parse::<u16>()?;
         
-        let server_address = format!("0.0.0.0:{}", port);
+        let server_address = env::var("SERVER_ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
 
         Ok(Config {
             server_address,

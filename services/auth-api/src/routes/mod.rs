@@ -1,12 +1,12 @@
-pub mod auth;
-pub mod friends;
+pub mod auth_routes;
+pub mod friend_routes;
 
 use actix_web::web;
 
 pub fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("")
-            .configure(auth::init_auth_routes)
-            .configure(friends::init_friend_routes)
+            .configure(auth_routes::configure)
+            .configure(friend_routes::configure)
     );
 }

@@ -1,34 +1,36 @@
 [package]
-name = "chatapp_by_aarchangel_backend"
+name = "auth-api"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4"
+actix-web = "4.4"
+actix-cors = "0.6"
+actix-service = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1", features = ["full"] }
-validator = { version = "0.16", features = ["derive"] }
-argon2 = "0.5"
-rand = "0.8" # For generating salt
-uuid = { version = "1", features = ["v4", "serde"] }
+tokio = { version = "1.0", features = ["full"] }
+sqlx = { version = "0.7", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json"] }
+uuid = { version = "1.0", features = ["serde", "v4"] }
 chrono = { version = "0.4", features = ["serde"] }
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-native-tls", "uuid", "chrono", "macros"] }
-dotenvy = "0.15"
-thiserror = "1.0" # Added for custom error handling
-utoipa = { version = "5.3.1", features = ["actix_extras", "chrono", "uuid", "macros"] }
-utoipa-swagger-ui = { version = "9.0.2", features = ["actix-web"] }
-base64 = "0.22" # Or the latest version
-
-jsonwebtoken = "9" # For JWT handling
-
-# Logging dependencies
+dotenv = "0.15"
+env_logger = "0.10"
+log = "0.4"
+jsonwebtoken = "9.2"
+bcrypt = "0.15"
+validator = { version = "0.16", features = ["derive"] }
+thiserror = "1.0"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["json", "registry", "env-filter", "fmt"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-actix-web = "0.7"
 tracing-appender = "0.2"
-tracing-actix-web = "0.7" # Added for Actix Web integration
+utoipa = { version = "4.1", features = ["actix_extras"] }
+utoipa-swagger-ui = { version = "5.0", features = ["actix-web"] }
+redis = { version = "0.24", features = ["tokio-comp"] }
+futures-util = "0.3"
+argon2 = "0.5.3"
 
 # For password hashing, argon2 needs a random number generator for salt
 # rand_core = { version = "0.6", features = ["std"] } # argon2 pulls this in via rand

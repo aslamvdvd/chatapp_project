@@ -5,59 +5,84 @@ services:
     image: postgres:16
     container_name: ghosttalk_db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: aarchangel
+      POSTGRES_PASSWORD: Aslam786@
+      POSTGRES_DB: chatapp_by_aarchangel_db
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
     restart: unless-stopped
+    networks:
+      - ghosttalk_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U aarchangel -d chatapp_by_aarchangel_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ghosttalk_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - ghosttalk_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   auth-api:
     build:
-      context: ./services/auth-api
-      dockerfile: ../../infra/docker/auth-api.Dockerfile
+      context: .
+      dockerfile: infra/docker/auth-api.Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL}
     container_name: ghosttalk_auth_api
     mem_limit: 2g
-    dns:
-      - 8.8.8.8
+    networks:
+      - ghosttalk_net
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
-      - "${PORT:-8080}:8080"
-    volumes:
-      - ./services/auth-api:/usr/src/app
-      - cargo_registry_cache:/usr/local/cargo/registry
-      - cargo_git_cache:/usr/local/cargo/git
-      - cargo_target_cache:/usr/src/app/target
+      - "8080:8080"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      RUST_LOG: "actix_web=debug,chatapp_by_aarchangel_backend=debug,sqlx=warn,system_events=info,user_events=debug,admin_events=debug,jsonwebtoken=info"
+      DATABASE_URL: postgres://aarchangel:Aslam786%40@db:5432/chatapp_by_aarchangel_db
+      REDIS_URL: "redis://redis:6379"
+      RUST_LOG: "debug,actix_web=debug,auth-api=debug,sqlx=debug"
       RUST_BACKTRACE: "1"
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES}
-      FEATURE_SIGNUP_ENABLED: ${FEATURE_SIGNUP_ENABLED:-true}
-      FEATURE_LOGIN_ENABLED: ${FEATURE_LOGIN_ENABLED:-true}
-    command: ["./chatapp_by_aarchangel_backend"]
+      JWT_SECRET: "your_jwt_secret_key_here"
+      JWT_EXPIRY_MINUTES: "60"
+      FEATURE_SIGNUP_ENABLED: "true"
+      FEATURE_LOGIN_ENABLED: "true"
     restart: unless-stopped
     labels:
       - "com.ghosttalk.description=GhostTalk Auth API"
       - "com.ghosttalk.version=0.1.0"
 
+  auth-api-builder:
+    build:
+      context: .
+      dockerfile: infra/docker/auth-api.Dockerfile
+      target: builder
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    networks:
+      - ghosttalk_net
+    depends_on:
+      - db
+
+networks:
+  ghosttalk_net:
+    driver: bridge
+
 volumes:
   pgdata:
-    driver: local
-  cargo_registry_cache:
-    driver: local
-  cargo_git_cache:
-    driver: local
-  cargo_target_cache:
     driver: local 

@@ -1,66 +1,54 @@
 # Stage 1: Builder
 FROM rust:slim as builder
 
+ARG DATABASE_URL
 WORKDIR /usr/src/app
 
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
-
 # Install build dependencies
-# Needed for some crates that link against C libraries (e.g., openssl-sys, some database drivers)
-# Adding `curl` for the utoipa-swagger-ui build script.
-RUN apt-get update && apt-get install -y libssl-dev pkg-config curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
 
-# Add cargo bin to path
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Install sqlx-cli
+RUN cargo install sqlx-cli
 
-# Install cargo-watch and sqlx-cli
-RUN cargo install cargo-watch sqlx-cli
+# Copy the Cargo.toml and Cargo.lock files first to cache dependencies
+COPY services/auth-api/Cargo.toml services/auth-api/Cargo.lock ./
 
-# Copy the entire backend source code
-COPY . .
+# Create a dummy main.rs to build dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs
 
-# Build the release binary.
-# This step benefits from cached Docker layers if dependencies in Cargo.toml haven't changed.
-ENV SQLX_OFFLINE=true 
+# Build dependencies
+RUN cargo build --release
+
+# Remove the dummy source code
+RUN rm -rf src
+
+# Copy the actual source code
+COPY services/auth-api/src ./src
+COPY services/auth-api/migrations ./migrations
+COPY services/auth-api/.sqlx ./.sqlx
+
+# Clean, update, and build
+RUN cargo clean
+RUN cargo update
 RUN cargo build --release
 
 # Stage 2: Runtime
-# Using Debian Bookworm slim as it includes libssl3 which rust:slim seems to link against
 FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Add cargo bin to path for runtime
-ENV PATH="/root/.cargo/bin:/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-# Install runtime dependencies (libssl3 and ca-certificates)
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y libssl3 ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Copy the .env file.
-# IMPORTANT: This expects a .env file to be present in the build context's root (/usr/src/app in builder stage)
-# For local builds, this .env would be copied from your project's ./backend directory.
-# For docker-compose, the .env file at the project root is typically used to substitute variables 
-# into docker-compose.yml, and then those are passed as environment variables to the container,
-# rather than copying a .env file directly into the image this way usually.
-# However, if your app specifically loads a .env file at runtime, this line might be relevant.
-# Consider if your app directly reads an .env file or relies purely on environment variables set by Docker Compose.
-# If it relies on env vars set by compose, this COPY command for .env might be less critical here,
-# as AppConfig.toml or direct env var reading in Rust would be used.
-# For now, keeping the COPY of .env.template as .env as per original plan.
-COPY --from=builder /usr/src/app/.env.template .env
-
-# Copy the migrations directory
+# Copy the migrations directory and binary
 COPY --from=builder /usr/src/app/migrations ./migrations
+COPY --from=builder /usr/src/app/target/release/auth-api ./auth-api
 
-# Copy only the built binary from the builder stage.
-COPY --from=builder /usr/src/app/target/release/chatapp_by_aarchangel_backend .
 # Ensure the binary is executable
-RUN chmod +x ./chatapp_by_aarchangel_backend
+RUN chmod +x ./auth-api
 
-# Expose the port the application will run on.
+# Expose the port
 EXPOSE ${PORT:-8080}
 
-# Command to run the application.
-# The backend binary will be executed.
-CMD ["./chatapp_by_aarchangel_backend"] 
+# Command to run the application
+CMD ["./auth-api"] 

@@ -42,35 +42,23 @@ pub struct User {
     "confirm_password": "securePassword123"
 }))]
 pub struct SignupUserDto {
-    #[validate(email(message = "Email must be a valid email address."))]
-    #[schema(example = "user@example.com")]
-    pub email: String,
-
-    #[validate(length(min = 3, message = "Username must be at least 3 characters long."))]
-    #[schema(example = "exampleuser")]
+    #[validate(length(min = 3, max = 30))]
     pub username: String,
-
-    #[validate(length(min = 1, message = "First name is required."))]
-    pub first_name: String,
-
-    pub middle_name: Option<String>,
-
-    #[validate(length(min = 1, message = "Last name is required."))]
-    pub last_name: String,
-
-    /// Date of birth in YYYY-MM-DD format.
-    #[validate(custom(function = "validate_dob"))]
-    pub date_of_birth: String, // Will be parsed into NaiveDate
-
-    pub gender: Option<String>,
-
-    #[validate(length(min = 8, message = "Password must be at least 8 characters long."))]
-    #[schema(example = "securePassword123", format = "password")]
+    
+    #[validate(email)]
+    pub email: String,
+    
+    #[validate(length(min = 8, max = 72))]
     pub password: String,
-
-    #[validate(must_match(other = "password", message = "Passwords must match."))]
-    #[schema(example = "securePassword123", format = "password")]
-    pub confirm_password: String, // Not stored, only for validation
+    
+    #[validate(length(min = 1, max = 50))]
+    pub first_name: String,
+    
+    #[validate(length(min = 1, max = 50))]
+    pub last_name: String,
+    
+    #[validate(custom = "validate_dob")]
+    pub date_of_birth: String,
 }
 
 /// Custom validation function for date_of_birth field.
@@ -159,13 +147,21 @@ pub struct UserInfoResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UserProfile {
     pub id: Uuid,
     pub username: String,
     pub email: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UserBasicInfo {
+    pub id: Uuid,
+    pub username: String,
+    pub email: String,
+    pub full_name: String,
 }
 
 impl From<User> for UserPublicData {

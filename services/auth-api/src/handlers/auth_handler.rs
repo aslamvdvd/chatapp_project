@@ -1,19 +1,17 @@
-use crate::core::app_state::AppState;
-use crate::models::auth::{LoginRequest, LoginResponse};
-use crate::models::user::{SignupUserDto, UserInfoResponse, UserPublicData};
+use crate::models::auth::LoginRequest;
+use crate::models::user::SignupUserDto;
 use crate::services::auth_service::{AuthService, AuthServiceError};
-use crate::utils::jwt::AuthenticatedUser;
+use crate::utils::jwt::{AuthenticatedUser, JwtError};
+use crate::core::app_state::AppState;
 use actix_web::{
     web::{Data, Json},
-    HttpResponse, ResponseError,
+    HttpResponse,
+    ResponseError,
 };
 use serde::Serialize;
 use std::collections::HashMap;
 use utoipa::ToSchema;
 use validator::Validate;
-
-// Import JwtError to implement From trait
-use crate::utils::jwt::JwtError;
 
 /// Represents errors that can occur in the auth handlers.
 /// Implements `ResponseError` to convert into HTTP responses.
@@ -61,72 +59,45 @@ impl ResponseError for ApiError {
 impl From<AuthServiceError> for ApiError {
     fn from(err: AuthServiceError) -> Self {
         match err {
-            AuthServiceError::Validation(details) => ApiError {
-                status_code: 400,
-                message: "Input validation failed.".to_string(),
-                errors: Some(details),
-            },
             AuthServiceError::Database(e) => {
-                tracing::error!(target: "system_events", error = %e, "Database error in auth service.");
+                tracing::error!(target: "system_events", error_message = %e, "Database error occurred.");
                 ApiError {
-                    status_code: 500,
                     message: "An internal database error occurred.".to_string(),
-                    errors: None,
-                }
-            }
-            AuthServiceError::PasswordHashing(msg) => {
-                tracing::error!(target: "system_events", error_message = %msg, "Password hashing error.");
-                ApiError {
                     status_code: 500,
-                    message: "Failed to process password securely.".to_string(),
                     errors: None,
                 }
-            }
-            AuthServiceError::InvalidDateFormat(msg) => ApiError {
-                status_code: 400,
-                message: format!("Invalid date format: {}. Use YYYY-MM-DD.", msg),
+            },
+            AuthServiceError::PasswordHashing(e) => {
+                tracing::error!(target: "system_events", error_message = %e, "Password hashing error.");
+                ApiError {
+                    message: "Failed to process password securely.".to_string(),
+                    status_code: 500,
+                    errors: None,
+                }
+            },
+            AuthServiceError::InvalidCredentials => ApiError {
+                message: "Invalid email or password.".to_string(),
+                status_code: 401,
                 errors: None,
             },
-            AuthServiceError::Unexpected(msg) => {
-                tracing::error!(target: "system_events", error_message = %msg, "Unexpected error in auth service.");
+            AuthServiceError::UserExists => ApiError {
+                message: "User with this email or username already exists.".to_string(),
+                status_code: 409,
+                errors: None,
+            },
+            AuthServiceError::Jwt(e) => {
+                tracing::error!(target: "system_events", error_message = %e, "JWT error.");
                 ApiError {
+                    message: "Failed to generate authentication token.".to_string(),
                     status_code: 500,
-                    message: "An unexpected error occurred.".to_string(),
                     errors: None,
                 }
-            }
-            AuthServiceError::UserNotFound => {
-                tracing::warn!(target: "user_events", "Login attempt for non-existent user.");
-                ApiError {
-                    status_code: 401,
-                    message: "Invalid email/username or password.".to_string(),
-                    errors: None,
-                }
-            }
-            AuthServiceError::InvalidCredentials => {
-                tracing::warn!(target: "user_events", "Login attempt with invalid credentials.");
-                ApiError {
-                    status_code: 401,
-                    message: "Invalid email/username or password.".to_string(),
-                    errors: None,
-                }
-            }
-            AuthServiceError::JwtGeneration(e) => {
-                tracing::error!(target: "system_events", error = %e, "JWT generation failed during login.");
-                ApiError {
-                    status_code: 500,
-                    message: "Could not process login request due to an internal error.".to_string(),
-                    errors: None,
-                }
-            }
-            AuthServiceError::PasswordVerification(msg) => {
-                tracing::error!(target: "system_events", error_message = %msg, "Password verification process failed during login.");
-                ApiError {
-                    status_code: 500,
-                    message: "Could not process login request due to a security system error.".to_string(),
-                    errors: None,
-                }
-            }
+            },
+            AuthServiceError::InvalidDateFormat(e) => ApiError {
+                message: format!("Invalid date format: {}. Use YYYY-MM-DD format.", e),
+                status_code: 400,
+                errors: None,
+            },
         }
     }
 }
@@ -239,19 +210,15 @@ pub async fn signup_handler(
 
     let dto = signup_user_dto.into_inner();
 
-    match auth_service.signup_user(dto).await {
+    match auth_service.signup(dto).await {
         Ok(user_public_data) => Ok(HttpResponse::Created().json(user_public_data)),
         Err(service_error) => {
-            if let AuthServiceError::Validation(ref details) = service_error {
-                if details.contains_key("email") || details.contains_key("username") {
-                    return Err(ApiError {
-                        status_code: 409,
-                        message: "User with this email or username already exists.".to_string(),
-                        errors: Some(details.clone()),
-                    });
-                }
+            let api_error = ApiError::from(service_error);
+            match api_error.status_code {
+                409 => Err(api_error),
+                400 => Err(api_error),
+                _ => Err(api_error),
             }
-            Err(service_error.into())
         }
     }
 }
@@ -316,13 +283,17 @@ pub async fn login_handler(
     let dto = login_request_dto.into_inner();
     tracing::info!(target: "user_events", "Login attempt for user: {}", dto.email_or_username);
 
-    match auth_service.login_user(dto).await {
+    match auth_service.login(dto).await {
         Ok(login_response) => {
             tracing::info!(target: "user_events", "User '{}' logged in successfully.", login_response.access_token);
             Ok(HttpResponse::Ok().json(login_response))
         }
         Err(service_error) => {
-            Err(service_error.into())
+            let api_error = ApiError::from(service_error);
+            match api_error.status_code {
+                401 => Err(api_error),
+                _ => Err(api_error),
+            }
         }
     }
 }
@@ -342,20 +313,19 @@ pub async fn login_handler(
 #[utoipa::path(
     get,
     path = "/auth/me",
+    responses(
+        (status = 200, description = "Authenticated user profile data", body = UserInfoResponse),
+        (status = 401, description = "Unauthorized - Invalid or expired token", body = ApiError)
+    ),
     security(
         ("bearer_auth" = [])
-    ),
-    responses(
-        (status = 200, description = "Current user data", body = UserInfoResponse),
-        (status = 401, description = "Unauthorized - invalid, expired, or missing token", body = ApiError),
-        (status = 404, description = "User associated with token not found", body = ApiError)
     )
 )]
 pub async fn me_handler(
     user: AuthenticatedUser,
     auth_service: Data<AuthService>,
 ) -> Result<HttpResponse, ApiError> {
-    tracing::info!(target: "user_events", user_id = %user.user_id, "Fetching profile for authenticated user.");
-    let user_info = auth_service.get_user_profile(user.user_id).await?;
+    tracing::info!(target: "user_events", "Fetching profile for authenticated user. user_id={}", user.user_id);
+    let user_info = auth_service.get_user_by_id(user.user_id).await?;
     Ok(HttpResponse::Ok().json(user_info))
 }

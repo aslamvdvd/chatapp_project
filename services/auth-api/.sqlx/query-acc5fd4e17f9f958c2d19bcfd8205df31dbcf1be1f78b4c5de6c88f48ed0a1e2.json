@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, username, email, created_at, updated_at\n        FROM users\n        WHERE username ILIKE $1 OR email ILIKE $1\n        LIMIT 20\n        ",
+  "query": "\n            SELECT id, username, email, created_at, updated_at\n            FROM users \n            WHERE email = $1 OR username = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -42,5 +42,5 @@
       false
     ]
   },
-  "hash": "53c0b098bf34fed87cd1543b517d95d409e3f1740b044b2d6516b00262ba06a2"
+  "hash": "acc5fd4e17f9f958c2d19bcfd8205df31dbcf1be1f78b4c5de6c88f48ed0a1e2"
 }
