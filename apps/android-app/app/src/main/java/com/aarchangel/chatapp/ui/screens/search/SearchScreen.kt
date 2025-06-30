@@ -13,6 +13,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aarchangel.chatapp.ChatApplication
 import com.aarchangel.chatapp.viewmodel.ViewModelFactory
 import androidx.compose.ui.tooling.preview.Preview
+import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

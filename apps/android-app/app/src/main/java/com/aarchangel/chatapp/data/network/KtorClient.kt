@@ -1,7 +1,6 @@
 package com.aarchangel.chatapp.data.network
 
 import com.aarchangel.chatapp.BuildConfig
-import com.aarchangel.chatapp.data.TokenStorage
 import io.ktor.client.*
 import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.*
@@ -20,10 +19,6 @@ object KtorClient {
             defaultRequest {
                 url(BuildConfig.API_URL)
                 contentType(ContentType.Application.Json)
-                val token = TokenStorage.getToken()
-                if (token != null) {
-                    header(HttpHeaders.Authorization, "Bearer $token")
-                }
             }
 
             install(ContentNegotiation) {
