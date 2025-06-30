@@ -1,21 +1,11 @@
 package com.aarchangel.chatapp.data.network
 
-import com.aarchangel.chatapp.BuildConfig
-import com.aarchangel.chatapp.data.network.dto.ApiErrorResponse
-import com.aarchangel.chatapp.data.network.dto.SignUpRequest
+import com.aarchangel.chatapp.model.dto.*
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.android.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
-import com.aarchangel.chatapp.dto.LoginRequest
-import com.aarchangel.chatapp.dto.LoginResponse
-import com.aarchangel.chatapp.dto.UserProfileDto
 
 sealed class NetworkResult<out T> {
     data class Success<out T>(val data: T) : NetworkResult<T>()
@@ -25,37 +15,14 @@ sealed class NetworkResult<out T> {
 interface AuthService {
     suspend fun signUp(request: SignUpRequest): Result<Unit>
     suspend fun login(request: LoginRequest): NetworkResult<LoginResponse>
-    suspend fun getProfile(token: String): NetworkResult<UserProfileDto>
+    suspend fun getProfile(): NetworkResult<UserProfileDto>
 }
 
-class AuthServiceImpl : AuthService {
-
-    private val client = HttpClient(Android) {
-        expectSuccess = false // Handle HTTP errors manually
-
-        install(ContentNegotiation) {
-            json(Json {
-                prettyPrint = true
-                isLenient = true
-                ignoreUnknownKeys = true // Important for evolving APIs
-            })
-        }
-
-        install(Logging) {
-            logger = Logger.DEFAULT
-            level = LogLevel.ALL // Log HTTP requests and responses
-        }
-
-        // Default request parameters if needed, e.g., base URL parts, headers
-        // defaultRequest {
-        //     contentType(ContentType.Application.Json)
-        // }
-    }
+class AuthServiceImpl(private val client: HttpClient) : AuthService {
 
     override suspend fun signUp(request: SignUpRequest): Result<Unit> {
         return try {
-            val response: HttpResponse = client.post("${BuildConfig.API_URL}/auth/signup") {
-                contentType(ContentType.Application.Json)
+            val response: HttpResponse = client.post("auth/signup") {
                 setBody(request)
             }
 
@@ -82,18 +49,17 @@ class AuthServiceImpl : AuthService {
 
     override suspend fun login(request: LoginRequest): NetworkResult<LoginResponse> {
         return try {
-            val response: HttpResponse = client.post("${BuildConfig.API_URL}/auth/login") {
-                contentType(ContentType.Application.Json)
+            val response: HttpResponse = client.post("auth/login") {
                 setBody(request)
             }
             
-            when (response.status.value) {
-                200 -> NetworkResult.Success(response.body())
-                400, 401 -> {
+            when (response.status) {
+                HttpStatusCode.OK -> NetworkResult.Success(response.body())
+                HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized -> {
                     val errorBody = response.body<ApiErrorResponse>()
                     NetworkResult.Error(errorBody.message, errorBody.errors)
                 }
-                500 -> NetworkResult.Error("Server error. Please try again later.")
+                HttpStatusCode.InternalServerError -> NetworkResult.Error("Server error. Please try again later.")
                 else -> NetworkResult.Error("An unknown error occurred.")
             }
         } catch (e: Exception) {
@@ -101,15 +67,13 @@ class AuthServiceImpl : AuthService {
         }
     }
 
-    override suspend fun getProfile(token: String): NetworkResult<UserProfileDto> {
+    override suspend fun getProfile(): NetworkResult<UserProfileDto> {
         return try {
-            val response: HttpResponse = client.get("${BuildConfig.API_URL}/auth/me") {
-                header(HttpHeaders.Authorization, "Bearer $token")
-            }
+            val response: HttpResponse = client.get("auth/me")
 
-            when (response.status.value) {
-                200 -> NetworkResult.Success(response.body())
-                401 -> NetworkResult.Error("Unauthorized. Your session may have expired.")
+            when (response.status) {
+                HttpStatusCode.OK -> NetworkResult.Success(response.body())
+                HttpStatusCode.Unauthorized -> NetworkResult.Error("Unauthorized. Your session may have expired.")
                 else -> NetworkResult.Error("An unknown error occurred.")
             }
         } catch (e: Exception) {

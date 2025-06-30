@@ -97,11 +97,6 @@ dependencies {
     // Jetpack Security for EncryptedSharedPreferences
     implementation("androidx.security:security-crypto:1.0.0")
 
-    // Retrofit & Gson for networking
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.6.0")
 } 
