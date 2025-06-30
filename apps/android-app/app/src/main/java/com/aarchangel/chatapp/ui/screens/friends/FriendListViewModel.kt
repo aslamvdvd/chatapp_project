@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aarchangel.chatapp.data.network.FriendService
 import com.aarchangel.chatapp.model.dto.FriendListItem
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 sealed class FriendListUiState {
@@ -18,6 +20,9 @@ sealed class FriendListUiState {
 class FriendListViewModel(private val friendService: FriendService) : ViewModel() {
     var uiState: FriendListUiState by mutableStateOf(FriendListUiState.Loading)
         private set
+
+    private val _snackbarMessages = Channel<String>()
+    val snackbarMessages = _snackbarMessages.receiveAsFlow()
 
     private var currentPage = 1
     private val limit = 20
@@ -43,7 +48,9 @@ class FriendListViewModel(private val friendService: FriendService) : ViewModel(
                     currentPage++
                 }
             } catch (e: Exception) {
-                uiState = FriendListUiState.Error(e.message ?: "An unknown error occurred")
+                val errorMessage = e.message ?: "An unknown error occurred"
+                uiState = FriendListUiState.Error(errorMessage)
+                _snackbarMessages.send(errorMessage)
             }
         }
     }

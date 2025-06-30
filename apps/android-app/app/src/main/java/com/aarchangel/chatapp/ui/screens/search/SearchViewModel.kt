@@ -13,7 +13,9 @@ import com.aarchangel.chatapp.model.dto.FriendStatus
 import com.aarchangel.chatapp.model.dto.RejectRequestPayload
 import com.aarchangel.chatapp.model.dto.UserSearchResult
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 sealed class SearchUiState {
@@ -29,6 +31,9 @@ class SearchViewModel(private val friendService: FriendService) : ViewModel() {
 
     var searchQuery by mutableStateOf("")
         private set
+
+    private val _snackbarMessages = Channel<String>()
+    val snackbarMessages = _snackbarMessages.receiveAsFlow()
 
     private var searchJob: Job? = null
     private var currentPage = 1
@@ -76,45 +81,47 @@ class SearchViewModel(private val friendService: FriendService) : ViewModel() {
     fun sendFriendRequest(userId: String) {
         viewModelScope.launch {
             try {
-                friendService.sendFriendRequest(FriendRequestPayload(receiver_id = userId))
+                friendService.sendFriendRequest(userId)
                 updateFriendStatus(userId, FriendStatus.PENDING_OUTGOING)
+                _snackbarMessages.send("Friend request sent.")
             } catch (e: Exception) {
-                // Handle error
+                _snackbarMessages.send("Failed to send friend request.")
             }
         }
     }
 
-    fun acceptFriendRequest(userId: String) {
+    fun acceptFriendRequest(requestId: String, userId: String) {
         viewModelScope.launch {
             try {
-                // The backend needs the request_id, not the user_id. This is a simplification.
-                // In a real app, you would need to get the request_id from somewhere.
-                friendService.acceptFriendRequest(AcceptRequestPayload(request_id = userId))
+                friendService.acceptFriendRequest(requestId)
                 updateFriendStatus(userId, FriendStatus.ACCEPTED)
+                _snackbarMessages.send("Friend request accepted.")
             } catch (e: Exception) {
-                // Handle error
+                _snackbarMessages.send("Failed to accept friend request.")
             }
         }
     }
 
-    fun rejectFriendRequest(userId: String) {
+    fun rejectFriendRequest(requestId: String, userId: String) {
         viewModelScope.launch {
             try {
-                friendService.rejectFriendRequest(RejectRequestPayload(request_id = userId))
+                friendService.rejectFriendRequest(requestId)
                 updateFriendStatus(userId, FriendStatus.NONE)
+                _snackbarMessages.send("Friend request rejected.")
             } catch (e: Exception) {
-                // Handle error
+                _snackbarMessages.send("Failed to reject friend request.")
             }
         }
     }
 
-    fun cancelFriendRequest(userId: String) {
+    fun cancelFriendRequest(requestId: String, userId: String) {
         viewModelScope.launch {
             try {
-                friendService.cancelFriendRequest(CancelRequestPayload(request_id = userId))
+                friendService.cancelFriendRequest(requestId)
                 updateFriendStatus(userId, FriendStatus.NONE)
+                _snackbarMessages.send("Friend request canceled.")
             } catch (e: Exception) {
-                // Handle error
+                _snackbarMessages.send("Failed to cancel friend request.")
             }
         }
     }
@@ -122,9 +129,9 @@ class SearchViewModel(private val friendService: FriendService) : ViewModel() {
     private fun updateFriendStatus(userId: String, newStatus: FriendStatus) {
         if (uiState is SearchUiState.Success) {
             val currentUsers = (uiState as SearchUiState.Success).users.toMutableList()
-            val userIndex = currentUsers.indexOfFirst { it.user.id == userId }
+            val userIndex = currentUsers.indexOfFirst { it.userId == userId }
             if (userIndex != -1) {
-                val updatedUser = currentUsers[userIndex].copy(friend_status = newStatus)
+                val updatedUser = currentUsers[userIndex].copy(status = newStatus)
                 currentUsers[userIndex] = updatedUser
                 uiState = (uiState as SearchUiState.Success).copy(users = currentUsers)
             }

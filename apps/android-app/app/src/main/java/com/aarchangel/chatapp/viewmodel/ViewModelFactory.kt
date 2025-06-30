@@ -10,6 +10,18 @@ class ViewModelFactory(private val container: AppContainer) : ViewModelProvider.
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
+            modelClass.isAssignableFrom(MainViewModel::class.java) -> {
+                @Suppress("UNCHECKED_CAST")
+                MainViewModel(container.authService, container.authRepository, container.preferenceManager) as T
+            }
+            modelClass.isAssignableFrom(EmailAuthViewModel::class.java) -> {
+                @Suppress("UNCHECKED_CAST")
+                EmailAuthViewModel(container.authService) as T
+            }
+            modelClass.isAssignableFrom(LoginViewModel::class.java) -> {
+                @Suppress("UNCHECKED_CAST")
+                LoginViewModel(container.authService, container.tokenStorage) as T
+            }
             modelClass.isAssignableFrom(FriendListViewModel::class.java) -> {
                 @Suppress("UNCHECKED_CAST")
                 FriendListViewModel(container.friendService) as T

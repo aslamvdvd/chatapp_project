@@ -31,8 +31,12 @@ data class CancelRequestPayload(
 
 @Serializable
 data class UserSearchResult(
-    val user: UserDto,
-    val friend_status: FriendStatus
+    val userId: String,
+    val username: String,
+    val fullName: String,
+    val avatarUrl: String? = null,
+    val requestId: String? = null,
+    val status: FriendStatus
 )
 
 @Serializable

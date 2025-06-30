@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.aarchangel.chatapp.data.TokenStorage
 import com.aarchangel.chatapp.data.network.AuthService
 import com.aarchangel.chatapp.data.network.NetworkResult
-import com.aarchangel.chatapp.dto.LoginRequest
-import com.aarchangel.chatapp.dto.UserProfileDto
+import com.aarchangel.chatapp.model.dto.LoginRequest
+import com.aarchangel.chatapp.model.dto.UserProfileDto
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,10 +35,10 @@ class LoginViewModel(
             _loginState.value = LoginState(isLoading = true)
             when (val result = authService.login(request)) {
                 is NetworkResult.Success -> {
-                    val token = result.data.accessToken
+                    val token = result.data.token
                     tokenStorage.saveToken(token)
 
-                    when (val profileResult = authService.getProfile(token)) {
+                    when (val profileResult = authService.getProfile()) {
                         is NetworkResult.Success -> {
                             _loginState.value = LoginState()
                             _loginEvent.send(profileResult.data)

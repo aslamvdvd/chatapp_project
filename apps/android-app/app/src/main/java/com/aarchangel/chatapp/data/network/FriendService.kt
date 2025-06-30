@@ -35,31 +35,31 @@ class FriendService(private val httpClient: HttpClient) {
         }.body()
     }
 
-    suspend fun sendFriendRequest(payload: FriendRequestPayload) {
+    suspend fun sendFriendRequest(userId: String) {
         httpClient.post("friends/request") {
             contentType(ContentType.Application.Json)
-            setBody(payload)
+            setBody(FriendRequestPayload(receiver_id = userId))
         }.body<Unit>()
     }
 
-    suspend fun acceptFriendRequest(payload: AcceptRequestPayload) {
+    suspend fun acceptFriendRequest(requestId: String) {
         httpClient.post("friends/accept") {
             contentType(ContentType.Application.Json)
-            setBody(payload)
+            setBody(AcceptRequestPayload(request_id = requestId))
         }.body<Unit>()
     }
 
-    suspend fun rejectFriendRequest(payload: RejectRequestPayload) {
+    suspend fun rejectFriendRequest(requestId: String) {
         httpClient.post("friends/reject") {
             contentType(ContentType.Application.Json)
-            setBody(payload)
+            setBody(RejectRequestPayload(request_id = requestId))
         }.body<Unit>()
     }
 
-    suspend fun cancelFriendRequest(payload: CancelRequestPayload) {
+    suspend fun cancelFriendRequest(requestId: String) {
         httpClient.post("friends/cancel") {
             contentType(ContentType.Application.Json)
-            setBody(payload)
+            setBody(CancelRequestPayload(request_id = requestId))
         }.body<Unit>()
     }
 }

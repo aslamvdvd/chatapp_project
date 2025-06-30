@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aarchangel.chatapp.data.AuthRepository
 import com.aarchangel.chatapp.data.local.PreferenceManager
-import com.aarchangel.chatapp.dto.UserProfileDto
+import com.aarchangel.chatapp.model.dto.UserProfileDto
 import com.aarchangel.chatapp.model.SessionState
 import com.aarchangel.chatapp.data.network.AuthService
 import com.aarchangel.chatapp.data.network.NetworkResult
@@ -43,7 +43,7 @@ class MainViewModel(
                 return@launch
             }
 
-            when (val result = authService.getProfile(token)) {
+            when (val result = authService.getProfile()) {
                 is NetworkResult.Success -> {
                     _sessionState.value = SessionState.LoggedIn(result.data)
                 }

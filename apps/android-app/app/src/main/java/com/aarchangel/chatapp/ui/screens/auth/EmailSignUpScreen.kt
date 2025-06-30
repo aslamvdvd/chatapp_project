@@ -30,7 +30,8 @@ import com.aarchangel.chatapp.ui.theme.Dimens
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aarchangel.chatapp.data.network.dto.SignUpRequest
+import com.aarchangel.chatapp.ChatApplication
+import com.aarchangel.chatapp.model.dto.SignUpRequest
 import com.aarchangel.chatapp.ui.screens.auth.components.DateVisualTransformation
 import com.aarchangel.chatapp.viewmodel.EmailAuthViewModel
 import com.aarchangel.chatapp.viewmodel.ViewModelFactory
@@ -42,7 +43,8 @@ fun EmailSignUpScreen(
     onNavigateBack: () -> Unit,
     onSignUpSuccess: () -> Unit
 ) {
-    val factory = ViewModelFactory(LocalContext.current)
+    val context = LocalContext.current
+    val factory = ViewModelFactory((context.applicationContext as ChatApplication).container)
     val viewModel: EmailAuthViewModel = viewModel(factory = factory)
     val signUpState by viewModel.signUpState.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -67,7 +69,6 @@ fun EmailSignUpScreen(
         }
     }
 
-    val context = LocalContext.current
     val calendar = Calendar.getInstance()
     val datePickerDialog = DatePickerDialog(
         context,
@@ -245,13 +246,7 @@ fun EmailSignUpScreen(
                             SignUpRequest(
                                 email = email,
                                 username = username,
-                                firstName = firstName,
-                                middleName = middleName.ifEmpty { null },
-                                lastName = lastName,
-                                dateOfBirth = dob,
-                                gender = gender.ifEmpty { null },
-                                password = password,
-                                confirmPassword = confirmPassword
+                                password = password
                             )
                         )
                     }
@@ -277,13 +272,7 @@ fun EmailSignUpScreen(
                         SignUpRequest(
                             email = email,
                             username = username,
-                            firstName = firstName,
-                            middleName = middleName.ifEmpty { null },
-                            lastName = lastName,
-                            dateOfBirth = dob,
-                            gender = gender.ifEmpty { null },
-                            password = password,
-                            confirmPassword = confirmPassword
+                            password = password
                         )
                     )
                 },

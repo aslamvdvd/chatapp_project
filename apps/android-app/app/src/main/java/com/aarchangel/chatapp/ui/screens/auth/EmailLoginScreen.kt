@@ -21,9 +21,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aarchangel.chatapp.ChatApplication
 import com.aarchangel.chatapp.config.AppConfig
-import com.aarchangel.chatapp.dto.LoginRequest
-import com.aarchangel.chatapp.dto.UserProfileDto
+import com.aarchangel.chatapp.model.dto.LoginRequest
+import com.aarchangel.chatapp.model.dto.UserProfileDto
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 import com.aarchangel.chatapp.ui.theme.Dimens
 import com.aarchangel.chatapp.viewmodel.LoginViewModel
@@ -34,7 +35,8 @@ fun EmailLoginScreen(
     onNavigateBack: () -> Unit,
     onLoginSuccess: (UserProfileDto) -> Unit
 ) {
-    val factory = ViewModelFactory(LocalContext.current)
+    val context = LocalContext.current
+    val factory = ViewModelFactory((context.applicationContext as ChatApplication).container)
     val viewModel: LoginViewModel = viewModel(factory = factory)
     val loginState by viewModel.loginState.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -98,7 +100,7 @@ fun EmailLoginScreen(
                     onDone = {
                         viewModel.login(
                             LoginRequest(
-                                emailOrUsername = emailOrUsername,
+                                email_or_username = emailOrUsername,
                                 password = password
                             )
                         )
@@ -123,7 +125,7 @@ fun EmailLoginScreen(
                 onClick = {
                     viewModel.login(
                         LoginRequest(
-                            emailOrUsername = emailOrUsername,
+                            email_or_username = emailOrUsername,
                             password = password
                         )
                     )

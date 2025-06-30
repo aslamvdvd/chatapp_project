@@ -3,10 +3,10 @@ package com.aarchangel.chatapp.ui.screens.friends
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -22,23 +22,45 @@ fun FriendListScreen(
     )
 ) {
     val uiState = viewModel.uiState
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        when (uiState) {
-            is FriendListUiState.Loading -> CircularProgressIndicator()
-            is FriendListUiState.Error -> Text(text = uiState.message)
-            is FriendListUiState.Success -> {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(uiState.friends) { friend ->
-                        FriendCard(friend = friend, onMessageClick = { /*TODO*/ }, onCallClick = { /*TODO*/ })
-                    }
-                    if (uiState.hasMore) {
-                        item {
-                            Button(
-                                onClick = { viewModel.fetchFriends() },
-                                modifier = Modifier.fillMaxWidth().padding(16.dp)
-                            ) {
-                                Text("Load More")
+    LaunchedEffect(viewModel.snackbarMessages) {
+        viewModel.snackbarMessages.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            when (uiState) {
+                is FriendListUiState.Loading -> CircularProgressIndicator()
+                is FriendListUiState.Error -> Text(text = uiState.message)
+                is FriendListUiState.Success -> {
+                    if (uiState.friends.isEmpty()) {
+                        Text("You don't have any friends yet. Add some from the search screen!")
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(uiState.friends) { friend ->
+                                FriendCard(friend = friend, onMessageClick = { /*TODO*/ }, onCallClick = { /*TODO*/ })
+                            }
+                            if (uiState.hasMore) {
+                                item {
+                                    Button(
+                                        onClick = { viewModel.fetchFriends() },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                    ) {
+                                        Text("Load More")
+                                    }
+                                }
                             }
                         }
                     }

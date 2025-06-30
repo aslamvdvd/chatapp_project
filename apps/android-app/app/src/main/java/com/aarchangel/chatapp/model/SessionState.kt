@@ -1,6 +1,6 @@
 package com.aarchangel.chatapp.model
 
-import com.aarchangel.chatapp.dto.UserProfileDto
+import com.aarchangel.chatapp.model.dto.UserProfileDto
 
 sealed class SessionState {
     object Loading : SessionState()

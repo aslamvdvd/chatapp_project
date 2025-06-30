@@ -72,3 +72,7 @@ workspace.xml
 
 # VS Code
 .vscode/ 
+
+
+# Unnecessary files
+android_app.txt
