@@ -1,0 +1,1 @@
+docker exec -it ghosttalk_db psql -U aarchangel -d chatapp_by_aarchangel_db
