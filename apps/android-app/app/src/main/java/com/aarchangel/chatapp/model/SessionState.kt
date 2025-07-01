@@ -6,4 +6,4 @@ sealed class SessionState {
     object Loading : SessionState()
     data class LoggedIn(val userProfile: UserProfileDto) : SessionState()
     object LoggedOut : SessionState()
-} 
+}

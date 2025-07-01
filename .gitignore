@@ -76,3 +76,5 @@ workspace.xml
 
 # Unnecessary files
 android_app.txt
+error.txt
+project_structure.txt

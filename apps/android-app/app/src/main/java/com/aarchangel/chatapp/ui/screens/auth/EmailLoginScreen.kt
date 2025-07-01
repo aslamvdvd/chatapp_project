@@ -100,7 +100,7 @@ fun EmailLoginScreen(
                     onDone = {
                         viewModel.login(
                             LoginRequest(
-                                email_or_username = emailOrUsername,
+                                emailOrUsername = emailOrUsername.trim(),
                                 password = password
                             )
                         )
@@ -125,7 +125,7 @@ fun EmailLoginScreen(
                 onClick = {
                     viewModel.login(
                         LoginRequest(
-                            email_or_username = emailOrUsername,
+                            emailOrUsername = emailOrUsername.trim(),
                             password = password
                         )
                     )

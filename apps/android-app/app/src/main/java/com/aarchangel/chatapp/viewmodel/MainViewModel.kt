@@ -1,20 +1,16 @@
 package com.aarchangel.chatapp.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aarchangel.chatapp.data.AuthRepository
 import com.aarchangel.chatapp.data.local.PreferenceManager
-import com.aarchangel.chatapp.model.dto.UserProfileDto
-import com.aarchangel.chatapp.model.SessionState
 import com.aarchangel.chatapp.data.network.AuthService
 import com.aarchangel.chatapp.data.network.NetworkResult
-import com.aarchangel.chatapp.navigation.AppScreen
-import kotlinx.coroutines.flow.MutableSharedFlow
+import com.aarchangel.chatapp.model.SessionState
+import com.aarchangel.chatapp.model.dto.UserProfileDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -71,4 +67,4 @@ class MainViewModel(
             _sessionState.value = SessionState.LoggedOut
         }
     }
-} 
+}

@@ -1,6 +1,7 @@
 package com.aarchangel.chatapp.data.network
 
 import com.aarchangel.chatapp.model.dto.*
+import com.aarchangel.chatapp.model.dto.UserProfileDto
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -72,7 +73,7 @@ class AuthServiceImpl(private val client: HttpClient) : AuthService {
             val response: HttpResponse = client.get("auth/me")
 
             when (response.status) {
-                HttpStatusCode.OK -> NetworkResult.Success(response.body())
+                HttpStatusCode.OK -> NetworkResult.Success(response.body<UserProfileDto>())
                 HttpStatusCode.Unauthorized -> NetworkResult.Error("Unauthorized. Your session may have expired.")
                 else -> NetworkResult.Error("An unknown error occurred.")
             }

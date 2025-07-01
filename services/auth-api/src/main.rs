@@ -1,4 +1,9 @@
-use actix_web::{middleware::Logger, web::Data, App, HttpServer};
+use actix_web::{
+    error::{Error, JsonPayloadError},
+    middleware::Logger,
+    web::{Data, JsonConfig},
+    App, HttpServer,
+};
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use tracing::info;
@@ -8,6 +13,7 @@ use crate::{
     core::{app_state::AppState, feature_flags::FeatureFlags},
     middleware::rate_limiter::RateLimiter,
     services::auth_service::AuthService,
+    handlers::auth_handler::ApiError,
 };
 
 mod config;
@@ -66,6 +72,16 @@ mod utils;
 )]
 struct ApiDoc;
 
+fn json_error_handler(err: JsonPayloadError, _req: &actix_web::HttpRequest) -> Error {
+    let detail = err.to_string();
+    let api_error = ApiError {
+        status_code: 400,
+        message: "Invalid JSON payload".to_string(),
+        errors: Some([("error".to_string(), vec![detail])].into()),
+    };
+    api_error.into()
+}
+
 /// Main function to set up and run the Actix web server.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -106,11 +122,16 @@ async fn main() -> std::io::Result<()> {
     let openapi = ApiDoc::openapi();
     
     HttpServer::new(move || {
+        let json_config = JsonConfig::default()
+            .limit(4096)
+            .error_handler(json_error_handler);
+
         App::new()
             .wrap(Logger::default())
             .wrap(rate_limiter.clone())
             .app_data(Data::new(app_state.clone()))
             .app_data(Data::new(auth_service.clone()))
+            .app_data(json_config)
             // Move SwaggerUi registration before configuring other routes
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")

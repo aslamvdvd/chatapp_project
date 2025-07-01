@@ -50,18 +50,14 @@ fun EmailSignUpScreen(
     val focusManager = LocalFocusManager.current
 
     var firstName by remember { mutableStateOf("") }
-    var middleName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var dob by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var genderDropdownExpanded by remember { mutableStateOf(false) }
-    val genderOptions = listOf("Male", "Female", "Other")
 
     LaunchedEffect(signUpState.isSuccess) {
         if (signUpState.isSuccess) {
@@ -75,7 +71,7 @@ fun EmailSignUpScreen(
         { _, year, month, dayOfMonth ->
             val newDate = Calendar.getInstance()
             newDate.set(year, month, dayOfMonth)
-            val format = SimpleDateFormat("ddMMyyyy", Locale.getDefault())
+            val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             dob = format.format(newDate.time)
         },
         calendar.get(Calendar.YEAR),
@@ -114,15 +110,6 @@ fun EmailSignUpScreen(
                 singleLine = true
             )
             OutlinedTextField(
-                value = middleName,
-                onValueChange = { middleName = it },
-                label = { Text("Middle Name") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                singleLine = true
-            )
-            OutlinedTextField(
                 value = lastName,
                 onValueChange = { lastName = it },
                 label = { Text("Last Name*") },
@@ -152,17 +139,12 @@ fun EmailSignUpScreen(
 
             OutlinedTextField(
                 value = dob,
-                onValueChange = {
-                    val digits = it.filter { char -> char.isDigit() }
-                    if (digits.length <= 8) {
-                        dob = digits
-                    }
-                },
-                label = { Text("Date of Birth (dd-mm-yyyy)*") },
+                onValueChange = { dob = it },
+                label = { Text("Date of Birth (YYYY-MM-DD)*") },
                 isError = signUpState.fieldErrors?.containsKey("date_of_birth") == true,
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                visualTransformation = DateVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                visualTransformation = DateVisualTransformation("YYYY-MM-DD"),
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 singleLine = true,
                 trailingIcon = {
@@ -176,37 +158,6 @@ fun EmailSignUpScreen(
                 Text(it.joinToString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
-            ExposedDropdownMenuBox(
-                expanded = genderDropdownExpanded,
-                onExpandedChange = { genderDropdownExpanded = !genderDropdownExpanded },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = gender,
-                    onValueChange = { },
-                    readOnly = true,
-                    label = { Text("Gender") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderDropdownExpanded)
-                    },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
-                ExposedDropdownMenu(
-                    expanded = genderDropdownExpanded,
-                    onDismissRequest = { genderDropdownExpanded = false }
-                ) {
-                    genderOptions.forEach { selectionOption ->
-                        DropdownMenuItem(
-                            text = { Text(selectionOption) },
-                            onClick = {
-                                gender = selectionOption
-                                genderDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-            
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -244,11 +195,15 @@ fun EmailSignUpScreen(
                     onDone = {
                         viewModel.signUp(
                             SignUpRequest(
-                                email = email,
-                                username = username,
-                                password = password
+                                email = email.trim(),
+                                username = username.trim(),
+                                password = password,
+                                firstName = firstName.trim(),
+                                lastName = lastName.trim(),
+                                dateOfBirth = dob
                             )
                         )
+                        focusManager.clearFocus()
                     }
                 ),
                 singleLine = true,
@@ -270,26 +225,38 @@ fun EmailSignUpScreen(
                 onClick = {
                     viewModel.signUp(
                         SignUpRequest(
-                            email = email,
-                            username = username,
-                            password = password
+                            email = email.trim(),
+                            username = username.trim(),
+                            password = password,
+                            firstName = firstName.trim(),
+                            lastName = lastName.trim(),
+                            dateOfBirth = dob
                         )
                     )
                 },
-                enabled = !signUpState.isLoading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Dimens.PaddingMedium),
+                enabled = !signUpState.isLoading
             ) {
                 if (signUpState.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator()
                 } else {
                     Text("Create Account")
                 }
             }
             
             signUpState.error?.let {
-                if (signUpState.fieldErrors == null) {
-                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                val errorMessage = when {
+                    it.contains("User with this email or username already exists") -> "A user with that email or username already exists. Please try another."
+                    else -> it
                 }
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = Dimens.PaddingMedium)
+                )
             }
 
             TextButton(onClick = onNavigateBack) {
@@ -305,4 +272,4 @@ fun EmailSignUpScreenPreview() {
     ChatAppTheme(darkTheme = true) {
         EmailSignUpScreen(onNavigateBack = {}, onSignUpSuccess = {})
     }
-} 
+}

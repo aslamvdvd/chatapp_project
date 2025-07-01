@@ -35,7 +35,7 @@ class LoginViewModel(
             _loginState.value = LoginState(isLoading = true)
             when (val result = authService.login(request)) {
                 is NetworkResult.Success -> {
-                    val token = result.data.token
+                    val token = result.data.accessToken
                     tokenStorage.saveToken(token)
 
                     when (val profileResult = authService.getProfile()) {
