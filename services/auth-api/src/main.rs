@@ -1,4 +1,4 @@
-use actix_web::{middleware::Logger, web::Data, App, HttpServer};
+use actix_web::{middleware::Logger, web::Data, App, HttpServer, web, error, HttpRequest};
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use tracing::info;
@@ -8,6 +8,7 @@ use crate::{
     core::{app_state::AppState, feature_flags::FeatureFlags},
     middleware::rate_limiter::RateLimiter,
     services::auth_service::AuthService,
+    handlers::auth_handler::ApiError,
 };
 
 mod config;
@@ -66,6 +67,21 @@ mod utils;
 )]
 struct ApiDoc;
 
+/// Custom error handler for JSON deserialization errors.
+fn json_error_handler(err: error::JsonPayloadError, _req: &HttpRequest) -> error::Error {
+    let detail = err.to_string();
+    let mut errors = std::collections::HashMap::new();
+    errors.insert("payload".to_string(), vec![detail]);
+
+    let api_error = ApiError {
+        status_code: 400,
+        message: "Invalid JSON payload provided.".to_string(),
+        errors: Some(errors),
+    };
+
+    api_error.into()
+}
+
 /// Main function to set up and run the Actix web server.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -111,6 +127,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(rate_limiter.clone())
             .app_data(Data::new(app_state.clone()))
             .app_data(Data::new(auth_service.clone()))
+            .app_data(web::JsonConfig::default().error_handler(json_error_handler))
             // Move SwaggerUi registration before configuring other routes
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}")

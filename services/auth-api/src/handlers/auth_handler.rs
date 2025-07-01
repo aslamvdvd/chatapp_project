@@ -285,15 +285,13 @@ pub async fn login_handler(
 
     match auth_service.login(dto).await {
         Ok(login_response) => {
-            tracing::info!(target: "user_events", "User '{}' logged in successfully.", login_response.access_token);
+            tracing::info!(target: "user_events", "User '{}' logged in successfully.", login_response.user.username);
             Ok(HttpResponse::Ok().json(login_response))
         }
         Err(service_error) => {
             let api_error = ApiError::from(service_error);
-            match api_error.status_code {
-                401 => Err(api_error),
-                _ => Err(api_error),
-            }
+            tracing::debug!(target: "actix_web::middleware::logger", "Error in response: {:?}", api_error);
+            Err(api_error)
         }
     }
 }

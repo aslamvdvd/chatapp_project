@@ -1,4 +1,4 @@
-.PHONY: all up down logs backend-logs db-logs ps clean prune db-shell migrate-setup migrate-container help
+.PHONY: all up down logs backend-logs db-logs ps clean prune db-shell migrate-setup migrate-container help sqlx-prepare
 
 # Default target
 all: up
@@ -69,6 +69,22 @@ db-shell:
 # 	@echo "(Container sqlx-cli) Running migrations inside the backend container..."
 # 	docker compose exec backend sqlx migrate run --source ./migrations # Adjust --source path if needed
 
+sqlx-prepare:
+	@echo "Making sure database is running..."
+	docker compose up -d db
+	@echo "Waiting for database to be ready..."
+	@until docker compose exec db pg_isready -U $$(grep POSTGRES_USER .env | cut -d '=' -f2) -q; do \
+		echo "Waiting for db..."; \
+		sleep 1; \
+	done
+	@echo "Database is ready! Preparing sqlx cache..."
+	@docker run --rm --network chatapp_project_ghosttalk_net \
+		-v ./services/auth-api:/usr/src/app \
+		-w /usr/src/app \
+		-e DATABASE_URL="postgres://$$(grep POSTGRES_USER .env | cut -d '=' -f2):$$(grep POSTGRES_PASSWORD .env | cut -d '=' -f2)@db:5432/$$(grep POSTGRES_DB .env | cut -d '=' -f2)" \
+		rust:slim sh -c "apt-get update > /dev/null && apt-get install -y pkg-config libssl-dev > /dev/null && cargo install sqlx-cli --version 0.7.4 --force > /dev/null && cargo sqlx prepare"
+	@echo "SQLx cache updated successfully."
+
 ## Help
 help:
 	@echo "Available commands:"
@@ -83,6 +99,9 @@ help:
 	@echo "  make db-recreate      - Forcefully removes the database and its data volume to allow for a clean start."
 	@echo "  make clean            - Stop services and prune unused Docker objects (images, networks, build cache)"
 	@echo "  make prune            - Aggressively stop services and prune Docker objects (includes unused volumes)"
+	@echo ""
+	@echo "SQLx Commands:"
+	@echo "  make sqlx-prepare         - Updates the compile-time query cache. Run this after changing SQL in the code."
 	@echo ""
 	@echo "SQLx Migration Examples (uncomment and adapt in Makefile if using sqlx-cli):"
 	@echo "  make migrate-setup-local    - Run migrations using local sqlx-cli against exposed DB port."

@@ -1,13 +1,14 @@
 use crate::core::rbac::Role;
 use crate::models::{
     auth::{LoginRequest, LoginResponse},
-    user::{SignupUserDto, UserInfoResponse, UserProfile},
+    user::{SignupUserDto, User, UserInfoResponse, UserPublicData},
 };
 use crate::utils::jwt::generate_jwt;
 use crate::utils::hash::{hash_password, verify_password};
 use sqlx::PgPool;
 use uuid::Uuid;
 use chrono::NaiveDate;
+use std::str::FromStr;
 
 /// Service layer error types.
 #[derive(Debug, thiserror::Error)]
@@ -63,7 +64,7 @@ impl AuthService {
     ///
     /// # Returns
     /// A `Result` containing `UserPublicData` on success, or `AuthServiceError` on failure.
-    pub async fn signup(&self, signup_data: SignupUserDto) -> Result<UserProfile, AuthServiceError> {
+    pub async fn signup(&self, signup_data: SignupUserDto) -> Result<UserPublicData, AuthServiceError> {
         // Check if user exists
         let existing_user = sqlx::query!(
             r#"
@@ -86,12 +87,11 @@ impl AuthService {
         let date_of_birth = NaiveDate::parse_from_str(&signup_data.date_of_birth, "%Y-%m-%d")
             .map_err(|e| AuthServiceError::InvalidDateFormat(e.to_string()))?;
 
-        let user = sqlx::query_as!(
-            UserProfile,
+        let record = sqlx::query!(
             r#"
             INSERT INTO users (username, email, password_hash, first_name, last_name, date_of_birth)
             VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id, username, email, created_at, updated_at
+            RETURNING id, username, email, password_hash, first_name, middle_name, last_name, date_of_birth, gender::text as gender, role::text as role, created_at, updated_at
             "#,
             signup_data.username,
             signup_data.email,
@@ -103,14 +103,28 @@ impl AuthService {
         .fetch_one(&self.db_pool)
         .await?;
 
-        Ok(user)
+        let user = User {
+            id: record.id,
+            email: record.email,
+            username: record.username,
+            password_hash: record.password_hash,
+            first_name: record.first_name,
+            middle_name: record.middle_name,
+            last_name: record.last_name,
+            date_of_birth: Some(record.date_of_birth),
+            gender: record.gender,
+            role: record.role.unwrap(),
+            created_at: record.created_at,
+            updated_at: record.updated_at,
+        };
+
+        Ok(user.into())
     }
 
-    pub async fn verify_credentials(&self, email: &str, password: &str) -> Result<UserProfile, AuthServiceError> {
-        let user = sqlx::query_as!(
-            UserProfile,
+    pub async fn verify_credentials(&self, email: &str, password: &str) -> Result<User, AuthServiceError> {
+        let record = sqlx::query!(
             r#"
-            SELECT id, username, email, created_at, updated_at
+            SELECT id, username, email, password_hash, first_name, middle_name, last_name, date_of_birth, gender::text as gender, role::text as role, created_at, updated_at
             FROM users
             WHERE email = $1
             "#,
@@ -120,14 +134,22 @@ impl AuthService {
         .await?
         .ok_or(AuthServiceError::InvalidCredentials)?;
 
-        let stored_hash = sqlx::query_scalar!(
-            "SELECT password_hash FROM users WHERE id = $1",
-            user.id
-        )
-        .fetch_one(&self.db_pool)
-        .await?;
+        let user = User {
+            id: record.id,
+            email: record.email,
+            username: record.username,
+            password_hash: record.password_hash,
+            first_name: record.first_name,
+            middle_name: record.middle_name,
+            last_name: record.last_name,
+            date_of_birth: Some(record.date_of_birth),
+            gender: record.gender,
+            role: record.role.unwrap(),
+            created_at: record.created_at,
+            updated_at: record.updated_at,
+        };
 
-        match verify_password(password, &stored_hash) {
+        match verify_password(password, &user.password_hash) {
             Ok(true) => Ok(user),
             Ok(false) | Err(_) => Err(AuthServiceError::InvalidCredentials),
         }
@@ -146,10 +168,9 @@ impl AuthService {
     pub async fn login(&self, login_data: LoginRequest) -> Result<LoginResponse, AuthServiceError> {
         let mut tx = self.db_pool.begin().await?;
 
-        let user = sqlx::query_as!(
-            UserProfile,
+        let record = sqlx::query!(
             r#"
-            SELECT id, username, email, created_at, updated_at
+            SELECT id, username, email, password_hash, first_name, middle_name, last_name, date_of_birth, gender::text as gender, role::text as role, created_at, updated_at
             FROM users 
             WHERE email = $1 OR username = $1
             "#,
@@ -159,21 +180,33 @@ impl AuthService {
         .await?
         .ok_or(AuthServiceError::InvalidCredentials)?;
 
-        let stored_hash: String = sqlx::query_scalar!(
-            "SELECT password_hash FROM users WHERE id = $1",
-            user.id
-        )
-        .fetch_one(&mut *tx)
-        .await?;
+        let user = User {
+            id: record.id,
+            email: record.email,
+            username: record.username,
+            password_hash: record.password_hash,
+            first_name: record.first_name,
+            middle_name: record.middle_name,
+            last_name: record.last_name,
+            date_of_birth: Some(record.date_of_birth),
+            gender: record.gender,
+            role: record.role.unwrap(),
+            created_at: record.created_at,
+            updated_at: record.updated_at,
+        };
 
-        if !verify_password(&login_data.password, &stored_hash)? {
+        if !verify_password(&login_data.password, &user.password_hash)? {
             return Err(AuthServiceError::InvalidCredentials);
         }
 
-        let token = generate_jwt(user.id, Role::User).map_err(|e| AuthServiceError::Jwt(e.to_string()))?;
+        let role = Role::from_str(&user.role).unwrap_or(Role::User);
+        let token = generate_jwt(user.id, role).map_err(|e| AuthServiceError::Jwt(e.to_string()))?;
+        
+        tx.commit().await?;
+
         Ok(LoginResponse {
-            access_token: token,
-            token_type: "Bearer".to_string(),
+            token,
+            user: user.into(),
         })
     }
 
@@ -200,4 +233,4 @@ impl AuthService {
 
         Ok(user)
     }
-}
+} 

@@ -1,5 +1,7 @@
 use crate::handlers::auth_handler::ApiError;
 use serde::{Deserialize, Serialize}; // Assuming ApiError is made public or moved
+use std::str::FromStr;
+use std::fmt;
 
 /// Defines user roles within the application.
 ///
@@ -17,6 +19,24 @@ pub enum Role {
 impl Default for Role {
     fn default() -> Self {
         Role::User
+    }
+}
+
+impl fmt::Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl FromStr for Role {
+    type Err = String;
+
+    fn from_str(input: &str) -> Result<Role, Self::Err> {
+        match input.to_lowercase().as_str() {
+            "user" => Ok(Role::User),
+            "admin" => Ok(Role::Admin),
+            _ => Err(format!("Invalid role: {}", input)),
+        }
     }
 }
 

@@ -1,6 +1,5 @@
 // Placeholder for user.rs model
 
-use crate::core::rbac::Role;
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -18,17 +17,14 @@ pub struct User {
     pub first_name: String,
     pub middle_name: Option<String>,
     pub last_name: String,
-    pub date_of_birth: NaiveDate,
+    pub date_of_birth: Option<NaiveDate>, // This can be NULL
     pub gender: Option<String>,
-    pub role: Role,
+    pub role: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    // TODO: Add fields like `is_verified`, `last_login_at`, `profile_picture_url` etc. as needed
 }
 
 /// Data transfer object for user signup requests.
-/// This struct is used to deserialize the incoming JSON payload for signup.
-/// It includes validation rules using the `validator` crate.
 #[derive(Debug, Serialize, Deserialize, Validate, ToSchema)]
 #[schema(example = json!({
     "email": "user@example.com",
@@ -62,7 +58,6 @@ pub struct SignupUserDto {
 }
 
 /// Custom validation function for date_of_birth field.
-/// Ensures the date string can be parsed into a valid NaiveDate.
 fn validate_dob(dob: &str) -> Result<(), validator::ValidationError> {
     let date = NaiveDate::parse_from_str(dob, "%Y-%m-%d");
     match date {
@@ -116,10 +111,11 @@ pub struct UserPublicData {
     #[schema(example = "User")]
     pub last_name: String,
     #[schema(example = "1990-01-15")]
-    pub date_of_birth: String, // Keep as string for response consistency with request
+    pub date_of_birth: Option<String>, // THIS IS THE FIX
     #[schema(example = "Other")]
     pub gender: Option<String>,
-    pub role: Role,
+    #[schema(example = "user")]
+    pub role: String,
     #[schema(format = "date-time", example = "2023-10-27T10:30:00Z")]
     pub created_at: DateTime<Utc>,
 }
@@ -173,7 +169,7 @@ impl From<User> for UserPublicData {
             first_name: user.first_name,
             middle_name: user.middle_name,
             last_name: user.last_name,
-            date_of_birth: user.date_of_birth.format("%Y-%m-%d").to_string(),
+            date_of_birth: user.date_of_birth.map(|d| d.format("%Y-%m-%d").to_string()), // THIS IS THE FIX
             gender: user.gender,
             role: user.role,
             created_at: user.created_at,

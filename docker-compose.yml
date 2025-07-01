@@ -41,6 +41,7 @@ services:
     build:
       context: .
       dockerfile: infra/docker/auth-api.Dockerfile # Use your auth-api Dockerfile
+      target: migrations
     container_name: ghosttalk_migrations
     networks:
       - ghosttalk_net
@@ -50,10 +51,7 @@ services:
     environment:
       DATABASE_URL: postgres://aarchangel:Aslam786%40@db:5432/chatapp_by_aarchangel_db
       # Add any other env vars sqlx-cli might need, though usually just DATABASE_URL is enough
-    command: sh -c "sqlx migrate run" # Command to run migrations
-    volumes:
-      - ./services/auth-api/migrations:/app/migrations # Mount your migrations directory
-      # Assuming your Dockerfile copies your Rust binary to /app
+    command: ["/usr/local/cargo/bin/sqlx", "migrate", "run"]
     # This container will run, apply migrations, and exit. No need to keep it running.
     # healthcheck is not usually needed for migration service itself
 
