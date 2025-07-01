@@ -1,4 +1,5 @@
-# version: '3.8'
+# /home/aarchangel/Desktop/chatapp_project/docker-compose.yml
+version: '3.8'
 
 services:
   db:
@@ -12,15 +13,15 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5433:5432"
+      - "5433:5432" # Host port 5433 maps to container port 5432
     restart: unless-stopped
     networks:
       - ghosttalk_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aarchangel -d chatapp_by_aarchangel_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 5s # Check every 5 seconds
+      timeout: 5s  # Timeout after 5 seconds
+      retries: 5   # Retry 5 times before considering unhealthy
 
   redis:
     image: redis:7-alpine
@@ -36,34 +37,25 @@ services:
       timeout: 5s
       retries: 5
 
-
-  migrations: # NEW SERVICE FOR MIGRATIONS
+  migrations:
     build:
-      context: .
-      dockerfile: infra/docker/auth-api.Dockerfile # Use your auth-api Dockerfile
-    container_name: ghosttalk_migrations
-    networks:
-      - ghosttalk_net
+      context: . # This refers to the directory where Dockerfile.migrations is located
+      dockerfile: Dockerfile.migrations # Point to your new Dockerfile
+    environment:
+      # This DATABASE_URL connects to the 'db' service within the Docker network
+      DATABASE_URL: postgres://aarchangel:Aslam786%40@db:5432/chatapp_by_aarchangel_db
+    volumes:
+      # Mount your local migrations directory into the container
+      - ./services/auth-api/migrations:/app/migrations
     depends_on:
       db:
-        condition: service_healthy # Migrations must wait for DB to be ready
-    environment:
-      DATABASE_URL: postgres://aarchangel:Aslam786%40@db:5432/chatapp_by_aarchangel_db
-      # Add any other env vars sqlx-cli might need, though usually just DATABASE_URL is enough
-    command: sh -c "sqlx migrate run" # Command to run migrations
-    volumes:
-      - ./services/auth-api/migrations:/app/migrations # Mount your migrations directory
-      # Assuming your Dockerfile copies your Rust binary to /app
-    # This container will run, apply migrations, and exit. No need to keep it running.
-    # healthcheck is not usually needed for migration service itself
-
+        condition: service_healthy # Ensures db is ready before migrations run
+    command: sqlx migrate run # This is the command to actually run the migrations
 
   auth-api:
     build:
-      context: .
-      dockerfile: infra/docker/auth-api.Dockerfile
-      args:
-        - DATABASE_URL=${DATABASE_URL}
+      context: . # Build context is the project root to access files like services/auth-api
+      dockerfile: infra/docker/auth-api.Dockerfile # Corrected path to your Dockerfile
     container_name: ghosttalk_auth_api
     mem_limit: 2g
     networks:
@@ -73,6 +65,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrations: # Make sure auth-api starts after migrations have successfully completed
+        condition: service_completed_successfully
     ports:
       - "8080:8080"
     environment:
@@ -80,7 +74,7 @@ services:
       REDIS_URL: "redis://redis:6379"
       RUST_LOG: "debug,actix_web=debug,auth-api=debug,sqlx=debug"
       RUST_BACKTRACE: "1"
-      JWT_SECRET: "2/S3udAXVmtIPKiTAVF/EVCxlQ7bNbW9KquF4kbyOdU="
+      JWT_SECRET: "2/S3udAXVmtIPKiTAVF/EVCxlQ7bNbW9KquF4kbyOdU=" # IMPORTANT: Use a secure, generated secret in production!
       JWT_EXPIRY_MINUTES: "60"
       FEATURE_SIGNUP_ENABLED: "true"
       FEATURE_LOGIN_ENABLED: "true"
@@ -95,4 +89,4 @@ networks:
 
 volumes:
   pgdata:
-    driver: local 
+    driver: local

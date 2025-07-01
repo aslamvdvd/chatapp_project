@@ -1,3 +1,4 @@
+# infra/docker/auth-api.Dockerfile
 # Stage 1: Builder
 FROM rust:slim AS builder
 
@@ -37,7 +38,17 @@ COPY services/auth-api/.sqlx ./.sqlx
 # Clean, update, and build
 RUN cargo clean
 RUN cargo update
+
+# Set the DATABASE_URL for sqlx-cli during build
+ENV DATABASE_URL=postgres://aarchangel:Aslam786%40@db:5432/chatapp_by_aarchangel_db
+
+# Add this line to prepare the query cache
+# RUN cargo sqlx prepare --check --workspace
+
+# Prepare SQLx query cache
+# This step is crucial for SQLX_OFFLINE=true
 RUN SQLX_OFFLINE=true cargo build --release
+
 
 # Stage 2: Runtime
 FROM debian:bookworm-slim

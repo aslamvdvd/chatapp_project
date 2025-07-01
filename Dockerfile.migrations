@@ -1,0 +1,23 @@
+# Use the official Rust image as a base
+FROM rust:slim-bookworm
+
+# Install system dependencies required for sqlx-cli (like OpenSSL development files and pkg-config)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends pkg-config libssl-dev ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy Cargo.toml and Cargo.lock from the specific service directory
+# The context is the root of chatapp_project, so paths must be relative to that.
+COPY services/auth-api/Cargo.toml services/auth-api/Cargo.lock ./
+
+# Install sqlx-cli globally in this image
+RUN cargo install sqlx-cli --version 0.7.4 --force
+
+# Copy your migrations directory into the image
+COPY services/auth-api/migrations ./migrations
+
+# Set the entrypoint for the container (the default command for this image)
+ENTRYPOINT ["sqlx"]

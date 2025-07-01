@@ -1,7 +1,9 @@
+// services/auth-api/src/services/auth_service.rs
+
 use crate::core::rbac::Role;
 use crate::models::{
     auth::{LoginRequest, LoginResponse},
-    user::{SignupUserDto, UserInfoResponse, UserProfile},
+    user::{SignupUserDto, UserInfoResponse, User, UserProfile},
 };
 use crate::utils::jwt::generate_jwt;
 use crate::utils::hash::{hash_password, verify_password};
@@ -147,17 +149,18 @@ impl AuthService {
         let mut tx = self.db_pool.begin().await?;
 
         let user = sqlx::query_as!(
-            UserProfile,
+            User, // Use the full User struct from `crate::models::user::User`
             r#"
-            SELECT id, username, email, created_at, updated_at
-            FROM users 
+            SELECT id, email, username, password_hash, first_name, middle_name, last_name, date_of_birth, gender, role as "role!: Role", created_at, updated_at
+            FROM users
             WHERE email = $1 OR username = $1
             "#,
             login_data.email_or_username
         )
         .fetch_optional(&mut *tx)
         .await?
-        .ok_or(AuthServiceError::InvalidCredentials)?;
+        .ok_or(AuthServiceError::InvalidCredentials)?; // If user not found, return invalid credentials
+
 
         let stored_hash: String = sqlx::query_scalar!(
             "SELECT password_hash FROM users WHERE id = $1",
@@ -166,14 +169,20 @@ impl AuthService {
         .fetch_one(&mut *tx)
         .await?;
 
-        if !verify_password(&login_data.password, &stored_hash)? {
+        if !verify_password(&login_data.password, &user.password_hash)? {
             return Err(AuthServiceError::InvalidCredentials);
         }
 
-        let token = generate_jwt(user.id, Role::User).map_err(|e| AuthServiceError::Jwt(e.to_string()))?;
+        let token = generate_jwt(user.id, user.role.clone()).map_err(|e| AuthServiceError::Jwt(e.to_string()))?;
+        
+        let user_info = self.get_user_by_id(user.id).await?;
+
+        tx.commit().await?; // Commit the transaction if everything above was successful
+        
         Ok(LoginResponse {
             access_token: token,
             token_type: "Bearer".to_string(),
+            user: user_info,
         })
     }
 
@@ -188,15 +197,16 @@ impl AuthService {
         let user = sqlx::query_as!(
             UserInfoResponse,
             r#"
-            SELECT id, username, email, first_name, middle_name, last_name, created_at
+            SELECT id, username, email, first_name, middle_name, last_name, created_at, profile_pic
             FROM users
             WHERE id = $1
             "#,
             user_id
         )
-        .fetch_optional(&self.db_pool)
-        .await?
-        .ok_or(AuthServiceError::InvalidCredentials)?;
+        // .fetch_optional(&self.db_pool)
+        .fetch_one(&self.db_pool) // Use self.db_pool here as it's a read operation
+        .await?;
+        // .ok_or(AuthServiceError::InvalidCredentials)?;
 
         Ok(user)
     }
