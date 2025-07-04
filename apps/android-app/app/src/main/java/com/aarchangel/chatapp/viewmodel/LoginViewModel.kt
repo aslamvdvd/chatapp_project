@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import com.aarchangel.chatapp.di.DefaultAppContainer
 
 data class LoginState(
     val isLoading: Boolean = false,
@@ -21,7 +22,8 @@ data class LoginState(
 
 class LoginViewModel(
     private val authService: AuthService,
-    private val tokenStorage: TokenStorage
+    private val tokenStorage: TokenStorage,
+    private val appContainer: DefaultAppContainer
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow(LoginState())
@@ -37,6 +39,7 @@ class LoginViewModel(
                 is NetworkResult.Success -> {
                     val token = result.data.token
                     tokenStorage.saveToken(token)
+                    appContainer.resetHttpClient()
 
                     when (val profileResult = authService.getProfile()) {
                         is NetworkResult.Success -> {

@@ -87,6 +87,7 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:2.3.10")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.10")
     implementation("io.ktor:ktor-client-logging:2.3.10") // Optional: for logging
+    implementation("io.ktor:ktor-client-auth:2.3.10")
 
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")

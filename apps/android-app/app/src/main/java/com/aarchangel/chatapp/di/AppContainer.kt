@@ -8,6 +8,7 @@ import com.aarchangel.chatapp.data.network.AuthService
 import com.aarchangel.chatapp.data.network.AuthServiceImpl
 import com.aarchangel.chatapp.data.network.FriendService
 import com.aarchangel.chatapp.data.network.KtorClient
+import io.ktor.client.HttpClient
 
 interface AppContainer {
     val authService: AuthService
@@ -15,21 +16,33 @@ interface AppContainer {
     val authRepository: AuthRepository
     val preferenceManager: PreferenceManager
     val tokenStorage: TokenStorage
+    fun getHttpClient(): HttpClient
 }
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
-    private val httpClient = KtorClient.instance
+    override val tokenStorage: TokenStorage by lazy {
+        TokenStorage(context)
+    }
+
+    private var _httpClient: HttpClient? = null
+
+    override fun getHttpClient(): HttpClient {
+        if (_httpClient == null) {
+            _httpClient = KtorClient.getInstance(tokenStorage)
+        }
+        return _httpClient!!
+    }
+
+    fun resetHttpClient() {
+        _httpClient = null
+    }
 
     override val authService: AuthService by lazy {
-        AuthServiceImpl(httpClient)
+        AuthServiceImpl(getHttpClient())
     }
 
     override val friendService: FriendService by lazy {
-        FriendService(httpClient)
-    }
-
-    override val tokenStorage: TokenStorage by lazy {
-        TokenStorage(context)
+        FriendService(getHttpClient())
     }
 
     override val authRepository: AuthRepository by lazy {

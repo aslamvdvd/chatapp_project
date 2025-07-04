@@ -9,6 +9,7 @@ use crate::{
     middleware::rate_limiter::RateLimiter,
     services::auth_service::AuthService,
     handlers::auth_handler::ApiError,
+    services::friend_service::FriendService,
 };
 
 mod config;
@@ -112,6 +113,7 @@ async fn main() -> std::io::Result<()> {
 
     // Initialize services
     let auth_service = AuthService::new(pool.clone());
+    let friend_service = FriendService::new(pool.clone());
 
     // Initialize feature flags and app state
     let feature_flags = FeatureFlags::from_env();
@@ -127,6 +129,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(rate_limiter.clone())
             .app_data(Data::new(app_state.clone()))
             .app_data(Data::new(auth_service.clone()))
+            .app_data(Data::new(friend_service.clone()))
             .app_data(web::JsonConfig::default().error_handler(json_error_handler))
             // Move SwaggerUi registration before configuring other routes
             .service(
