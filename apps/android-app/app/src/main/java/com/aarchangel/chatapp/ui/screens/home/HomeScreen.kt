@@ -12,14 +12,18 @@ import com.aarchangel.chatapp.ui.screens.home.state.HomeViewModel
 import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 
 @Composable
-fun HomeScreen(onNavigateToSearch: () -> Unit) {
+fun HomeScreen(
+    onNavigateToSearch: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
     val navController = rememberNavController()
     val homeViewModel: HomeViewModel = viewModel()
 
     Column {
         AppTopBar(
             appEnv = ProductionAppEnv,
-            onSearchClick = onNavigateToSearch
+            onSearchClick = onNavigateToSearch,
+            onLogoutClick = onLogoutClick
         )
         TopNavTabs(
             appEnv = ProductionAppEnv,
@@ -53,6 +57,6 @@ fun HomeScreen(onNavigateToSearch: () -> Unit) {
 @Composable
 fun HomeScreenPreview() {
     ChatAppTheme(darkTheme = true) {
-        HomeScreen(onNavigateToSearch = {})
+        HomeScreen(onNavigateToSearch = {}, onLogoutClick = {})
     }
 }

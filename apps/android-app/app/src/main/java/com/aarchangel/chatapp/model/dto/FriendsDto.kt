@@ -1,5 +1,6 @@
 package com.aarchangel.chatapp.model.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -41,9 +42,13 @@ data class UserSearchResult(
 
 @Serializable
 enum class FriendStatus {
+    @SerialName("none")
     NONE,
+    @SerialName("pending_incoming")
     PENDING_INCOMING,
+    @SerialName("pending_outgoing")
     PENDING_OUTGOING,
+    @SerialName("accepted")
     ACCEPTED
 }
 

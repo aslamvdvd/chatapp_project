@@ -30,7 +30,8 @@ import com.aarchangel.chatapp.ui.theme.ChatAppTheme
 @Composable
 fun AppTopBar(
     appEnv: AppEnv,
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
+    onLogoutClick: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -75,7 +76,13 @@ fun AppTopBar(
                 DropdownMenuItem(text = { Text("New ${appEnv.channelAlias}") }, onClick = { /* Handle action */ })
                 DropdownMenuItem(text = { Text("Profile") }, onClick = { /*Handle Profile opening action */})
                 DropdownMenuItem(text = { Text("Settings") }, onClick = { /* Handle action */ })
-                DropdownMenuItem(text = { Text("Logout") }, onClick = { /*Handle Logout action */})
+                DropdownMenuItem(
+                    text = { Text("Logout") },
+                    onClick = {
+                        showMenu = false
+                        onLogoutClick()
+                    }
+                )
             }
         },
         modifier = Modifier.semantics { contentDescription = "Top application bar" }
@@ -86,6 +93,6 @@ fun AppTopBar(
 @Composable
 fun AppTopBarPreview() {
     ChatAppTheme(darkTheme = true) {
-        AppTopBar(appEnv = MockAppEnv, onSearchClick = {})
+        AppTopBar(appEnv = MockAppEnv, onSearchClick = {}, onLogoutClick = {})
     }
 } 

@@ -1,7 +1,7 @@
 use crate::core::rbac::Role;
 use crate::models::{
     auth::{LoginRequest, LoginResponse},
-    user::{SignupUserDto, User, UserInfoResponse, UserPublicData},
+    user::{SignupUserDto, User, UserInfoResponse, UserLoginInfo, UserPublicData},
 };
 use crate::utils::jwt::generate_jwt;
 use crate::utils::hash::{hash_password, verify_password};
@@ -65,6 +65,8 @@ impl AuthService {
     /// # Returns
     /// A `Result` containing `UserPublicData` on success, or `AuthServiceError` on failure.
     pub async fn signup(&self, signup_data: SignupUserDto) -> Result<UserPublicData, AuthServiceError> {
+        let mut tx = self.db_pool.begin().await?;
+
         // Check if user exists
         let existing_user = sqlx::query!(
             r#"
@@ -74,7 +76,7 @@ impl AuthService {
             signup_data.email,
             signup_data.username
         )
-        .fetch_optional(&self.db_pool)
+        .fetch_optional(&mut *tx)
         .await?;
 
         if existing_user.is_some() {
@@ -89,8 +91,8 @@ impl AuthService {
 
         let record = sqlx::query!(
             r#"
-            INSERT INTO users (username, email, password_hash, first_name, last_name, date_of_birth)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO users (username, email, password_hash, first_name, last_name, middle_name, date_of_birth, gender)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING id, username, email, password_hash, first_name, middle_name, last_name, date_of_birth, gender::text as gender, role::text as role, created_at, updated_at
             "#,
             signup_data.username,
@@ -98,10 +100,14 @@ impl AuthService {
             password_hash,
             signup_data.first_name,
             signup_data.last_name,
-            date_of_birth
+            signup_data.middle_name,
+            date_of_birth,
+            signup_data.gender
         )
-        .fetch_one(&self.db_pool)
+        .fetch_one(&mut *tx)
         .await?;
+        
+        tx.commit().await?;
 
         let user = User {
             id: record.id,

@@ -35,21 +35,25 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     fun resetHttpClient() {
         _httpClient = null
+        resetServices()
     }
 
-    override val authService: AuthService by lazy {
-        AuthServiceImpl(getHttpClient())
-    }
+    override lateinit var authService: AuthService
+    override lateinit var friendService: FriendService
 
-    override val friendService: FriendService by lazy {
-        FriendService(getHttpClient())
-    }
-
-    override val authRepository: AuthRepository by lazy {
-        AuthRepository(authService, tokenStorage)
-    }
+    override val authRepository: AuthRepository
+        get() = AuthRepository(authService, tokenStorage)
 
     override val preferenceManager: PreferenceManager by lazy {
         PreferenceManager(context)
+    }
+
+    init {
+        resetServices()
+    }
+
+    private fun resetServices() {
+        authService = AuthServiceImpl(getHttpClient())
+        friendService = FriendService(getHttpClient())
     }
 } 

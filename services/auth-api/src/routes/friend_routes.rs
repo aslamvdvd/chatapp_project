@@ -9,6 +9,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route("/reject", web::post().to(friend_handler::reject_request))
             .route("/cancel", web::post().to(friend_handler::cancel_request))
             .route("/list", web::get().to(friend_handler::list_friends))
+            .route("/requests", web::get().to(friend_handler::list_requests))
     )
     .service(
         web::scope("/users")

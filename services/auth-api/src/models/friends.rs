@@ -30,6 +30,7 @@ pub struct FriendRequest {
     pub status: FriendStatus,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
 }
 
 #[derive(Debug, FromRow, Serialize, ToSchema)]
@@ -89,14 +90,28 @@ pub struct UserSearchQuery {
     pub limit: i32,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PaginationQuery {
+    #[schema(example = 1)]
+    #[serde(default = "default_page")]
+    pub page: i32,
+    #[schema(example = 20)]
+    #[serde(default = "default_limit")]
+    pub limit: i32,
+}
+
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserSearchResult {
+    #[serde(flatten)]
     pub user: UserBasicInfo,
+    #[serde(rename = "status")]
     pub friend_status: UserFriendStatus,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct UserBasicInfo {
+    #[serde(rename = "userId")]
     pub id: Uuid,
     pub username: String,
     pub email: String,
@@ -114,8 +129,10 @@ pub enum UserFriendStatus {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct PaginatedResponse<T> {
-    pub data: Vec<T>,
-    pub pagination: PaginationInfo,
+    pub items: Vec<T>,
+    pub page: i32,
+    pub limit: i32,
+    pub has_more: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

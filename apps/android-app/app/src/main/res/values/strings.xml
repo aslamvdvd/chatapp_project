@@ -4,4 +4,9 @@
     <string name="user_profile_picture_description">User profile picture</string>
     <string name="search_content_description">Search</string>
     <string name="more_options_content_description">More options</string>
+    <string name="login_button">Login</string>
+    <string name="signup_button">Sign Up</string>
+    <string name="friends_tab_my_friends">My Friends</string>
+    <string name="friends_tab_incoming_requests">Requests</string>
+    <string name="friends_tab_blocked_users">Blocked</string>
 </resources> 

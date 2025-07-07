@@ -1,7 +1,8 @@
-use crate::models::friends::{FriendRequest, FriendStatus, UserSearchResult, PaginatedResponse, PaginationInfo, UserBasicInfo, UserFriendStatus};
+use crate::models::friends::{FriendRequest, UserSearchResult, PaginatedResponse, UserBasicInfo, UserFriendStatus};
 use sqlx::{PgPool, Result};
 use uuid::Uuid;
 use tracing::{info, warn, error, instrument};
+use chrono::{Utc, Duration};
 
 const DEFAULT_PAGE_SIZE: i32 = 20;
 const MAX_PAGE_SIZE: i32 = 100;
@@ -40,8 +41,8 @@ impl FriendService {
 
         let mut tx = self.pool.begin().await?;
 
-        // Check if request already exists
-        let existing = sqlx::query!(
+        // Check for existing pending request
+        let existing_request = sqlx::query!(
             r#"
             SELECT id FROM friend_requests 
             WHERE (sender_id = $1 AND receiver_id = $2) 
@@ -54,19 +55,23 @@ impl FriendService {
         .fetch_optional(&mut *tx)
         .await?;
 
-        if existing.is_some() {
+        if existing_request.is_some() {
             return Err(FriendServiceError::DuplicateRequest);
         }
 
+        let expires_at = Utc::now() + Duration::days(7);
+
+        // Create new friend request
         let request = sqlx::query_as!(
             FriendRequest,
             r#"
-            INSERT INTO friend_requests (sender_id, receiver_id, status)
-            VALUES ($1, $2, 'pending')
-            RETURNING id, sender_id, receiver_id, status as "status: FriendStatus", created_at, updated_at
+            INSERT INTO friend_requests (sender_id, receiver_id, status, expires_at)
+            VALUES ($1, $2, 'pending', $3)
+            RETURNING id, sender_id, receiver_id, status as "status: _", created_at, updated_at, expires_at
             "#,
             sender_id,
-            receiver_id
+            receiver_id,
+            expires_at
         )
         .fetch_one(&mut *tx)
         .await?;
@@ -192,12 +197,47 @@ impl FriendService {
         let has_more = ((offset + limit) as i64) < total_count.count.unwrap_or(0);
 
         Ok(PaginatedResponse {
-            data: friends,
-            pagination: PaginationInfo {
-                page,
-                limit,
-                has_more,
-            },
+            items: friends,
+            page,
+            limit,
+            has_more,
+        })
+    }
+
+    #[instrument(skip(self), fields(user_id = %user_id))]
+    pub async fn get_friend_requests(&self, user_id: Uuid, page: i32, limit: i32) -> Result<PaginatedResponse<FriendRequest>, FriendServiceError> {
+        let offset = (page - 1) * limit;
+
+        let requests = sqlx::query_as!(
+            FriendRequest,
+            r#"
+            SELECT id, sender_id, receiver_id, status as "status: _", created_at, updated_at, expires_at
+            FROM friend_requests
+            WHERE receiver_id = $1 AND status = 'pending'
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            user_id,
+            limit as i64,
+            offset as i64
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let total_count = sqlx::query!(
+            "SELECT COUNT(*) as count FROM friend_requests WHERE receiver_id = $1 AND status = 'pending'",
+            user_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let has_more = ((offset + limit) as i64) < total_count.count.unwrap_or(0);
+
+        Ok(PaginatedResponse {
+            items: requests,
+            page,
+            limit,
+            has_more,
         })
     }
 
@@ -296,12 +336,10 @@ impl FriendService {
         let has_more = ((offset + limit) as i64) < total_count.count.unwrap_or(0);
 
         Ok(PaginatedResponse {
-            data: search_results,
-            pagination: PaginationInfo {
-                page,
-                limit,
-                has_more,
-            },
+            items: search_results,
+            page,
+            limit,
+            has_more,
         })
     }
 } 

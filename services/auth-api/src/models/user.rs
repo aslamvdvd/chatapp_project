@@ -50,11 +50,15 @@ pub struct SignupUserDto {
     #[validate(length(min = 1, max = 50))]
     pub first_name: String,
     
+    pub middle_name: Option<String>,
+
     #[validate(length(min = 1, max = 50))]
     pub last_name: String,
     
     #[validate(custom = "validate_dob")]
     pub date_of_birth: String,
+
+    pub gender: Option<String>,
 }
 
 /// Custom validation function for date_of_birth field.
@@ -143,6 +147,16 @@ pub struct UserInfoResponse {
     pub created_at: DateTime<Utc>,
 }
 
+/// Represents the minimal data returned to the client after a successful login.
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserLoginInfo {
+    pub id: Uuid,
+    pub username: String,
+    #[serde(rename = "profile_pic")]
+    pub profile_pic: Option<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserProfile {
     pub id: Uuid,
@@ -187,6 +201,17 @@ impl From<User> for UserInfoResponse {
             middle_name: user.middle_name,
             last_name: user.last_name,
             created_at: user.created_at,
+        }
+    }
+}
+
+impl From<User> for UserLoginInfo {
+    fn from(user: User) -> Self {
+        UserLoginInfo {
+            id: user.id,
+            username: user.username,
+            // TODO: Implement profile picture logic
+            profile_pic: None,
         }
     }
 }

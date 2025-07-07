@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 use utoipa::ToSchema;
-use crate::models::user::UserPublicData;
+use crate::models::user::UserLoginInfo;
 
 /// Represents the request payload for user login.
 #[derive(Debug, Deserialize, Serialize, Validate, ToSchema)]
@@ -29,14 +29,12 @@ pub struct LoginRequest {
     "user": {
         "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
         "username": "example_user",
-        "email": "user@example.com",
-        "created_at": "2025-01-01T12:00:00Z",
-        "updated_at": "2025-01-01T12:00:00Z"
+        "profile_pic": null
     }
 }))]
 pub struct LoginResponse {
     /// The JWT access token.
     pub token: String,
     /// The public data of the authenticated user.
-    pub user: UserPublicData,
+    pub user: UserLoginInfo,
 } 

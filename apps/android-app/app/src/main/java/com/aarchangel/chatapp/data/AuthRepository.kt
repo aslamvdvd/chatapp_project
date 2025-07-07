@@ -6,6 +6,8 @@ class AuthRepository(
     private val authService: AuthService,
     private val tokenStorage: TokenStorage
 ) {
+    suspend fun getProfile() = authService.getProfile()
+
     suspend fun clearJwt() {
         tokenStorage.clearToken()
     }

@@ -32,22 +32,17 @@ class MainViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {
-        checkSession()
-    }
-
-    private fun checkSession() {
         viewModelScope.launch {
             val token = authRepository.getToken()
             if (token == null) {
                 _sessionState.value = SessionState.LoggedOut
-                return@launch
-            }
-
-            when (val result = authService.getProfile()) {
-                is NetworkResult.Success -> {
-                    _sessionState.value = SessionState.LoggedIn(result.data)
-                }
-                is NetworkResult.Error -> {
+            } else {
+                // Token exists, now verify it by fetching the profile
+                val profileResult = authRepository.getProfile()
+                if (profileResult is NetworkResult.Success) {
+                    _sessionState.value = SessionState.LoggedIn(profileResult.data)
+                } else {
+                    // Token is invalid or expired
                     authRepository.clearJwt()
                     _sessionState.value = SessionState.LoggedOut
                 }

@@ -3,6 +3,7 @@ package com.aarchangel.chatapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.aarchangel.chatapp.di.AppContainer
+import com.aarchangel.chatapp.di.DefaultAppContainer
 import com.aarchangel.chatapp.ui.screens.friends.FriendListViewModel
 import com.aarchangel.chatapp.ui.screens.search.SearchViewModel
 
@@ -20,7 +21,11 @@ class ViewModelFactory(private val container: AppContainer) : ViewModelProvider.
             }
             modelClass.isAssignableFrom(LoginViewModel::class.java) -> {
                 @Suppress("UNCHECKED_CAST")
-                LoginViewModel(container.authService, container.tokenStorage) as T
+                LoginViewModel(
+                    container.authService,
+                    container.tokenStorage,
+                    container as DefaultAppContainer
+                ) as T
             }
             modelClass.isAssignableFrom(FriendListViewModel::class.java) -> {
                 @Suppress("UNCHECKED_CAST")

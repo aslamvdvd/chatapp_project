@@ -1,6 +1,9 @@
 use actix_web::{web::{Data, Json, Query}, HttpResponse};
 use crate::{
-    models::friends::{FriendRequestPayload, AcceptRequestPayload, RejectRequestPayload, CancelRequestPayload, UserSearchQuery},
+    models::friends::{
+        AcceptRequestPayload, CancelRequestPayload, FriendRequestPayload, PaginationQuery,
+        RejectRequestPayload, UserSearchQuery,
+    },
     services::friend_service::{FriendService, FriendServiceError},
     utils::jwt::AuthenticatedUser,
 };
@@ -191,7 +194,7 @@ pub async fn cancel_request(
 pub async fn list_friends(
     user: AuthenticatedUser,
     friend_service: Data<FriendService>,
-    query: Query<UserSearchQuery>,
+    query: Query<PaginationQuery>,
 ) -> Result<HttpResponse, FriendHandlerError> {
     info!(user_id = %user.user_id, "Fetching friends list");
     
@@ -200,6 +203,36 @@ pub async fn list_friends(
         .await?;
 
     Ok(HttpResponse::Ok().json(friends))
+}
+
+/// Get list of incoming friend requests
+#[utoipa::path(
+    get,
+    path = "/friends/requests",
+    params(
+        ("page" = i32, Query, description = "Page number (1-based)"),
+        ("limit" = i32, Query, description = "Number of items per page")
+    ),
+    responses(
+        (status = 200, description = "List of friend requests retrieved successfully"),
+        (status = 400, description = "Invalid parameters")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn list_requests(
+    user: AuthenticatedUser,
+    friend_service: Data<FriendService>,
+    query: Query<PaginationQuery>,
+) -> Result<HttpResponse, FriendHandlerError> {
+    info!(user_id = %user.user_id, "Fetching friend requests");
+
+    let requests = friend_service
+        .get_friend_requests(user.user_id, query.page, query.limit)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(requests))
 }
 
 /// Search for users

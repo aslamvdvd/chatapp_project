@@ -111,7 +111,13 @@ fun ChatAppNavigation(appContainer: com.aarchangel.chatapp.di.AppContainer) {
         }
         composable(AppScreen.Home.route) {
             MainScreen(
-                onNavigateToSearch = { navController.navigate(AppScreen.Search.route) }
+                onNavigateToSearch = { navController.navigate(AppScreen.Search.route) },
+                onLogoutClick = {
+                    mainViewModel.onLogout()
+                    navController.navigate(AppScreen.AuthEntry.route) {
+                        popUpTo(AppScreen.Home.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(AppScreen.Search.route) {

@@ -15,7 +15,8 @@ import com.aarchangel.chatapp.viewmodel.ViewModelFactory
 @Composable
 fun BottomNavGraph(
     navController: NavHostController,
-    onNavigateToSearch: () -> Unit
+    onNavigateToSearch: () -> Unit,
+    onLogoutClick: () -> Unit
 ) {
     val context = LocalContext.current
     val factory = ViewModelFactory((context.applicationContext as ChatApplication).container)
@@ -25,7 +26,10 @@ fun BottomNavGraph(
         startDestination = BottomNavItem.Home.route
     ) {
         composable(route = BottomNavItem.Home.route) {
-            HomeScreen(onNavigateToSearch = onNavigateToSearch)
+            HomeScreen(
+                onNavigateToSearch = onNavigateToSearch,
+                onLogoutClick = onLogoutClick
+            )
         }
         composable(route = BottomNavItem.Phone.route) {
             // Placeholder for Phone Screen

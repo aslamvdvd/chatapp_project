@@ -62,5 +62,14 @@ class FriendService(private val httpClient: HttpClient) {
             setBody(CancelRequestPayload(request_id = requestId))
         }.body<Unit>()
     }
+
+    suspend fun getIncomingFriendRequests(page: Int, limit: Int): PaginatedResponse<UserSearchResult> {
+        return httpClient.get("friends/requests") {
+            url {
+                parameters.append("page", page.toString())
+                parameters.append("limit", limit.toString())
+            }
+        }.body()
+    }
 }
 
