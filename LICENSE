@@ -1,21 +1,43 @@
-MIT License
+Copyright (c) 2025 Mohammad Aslam
 
-Copyright (c) $(date +%Y) aarchangel
+All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This software and associated source code (“GhostTalk” or “the Software”) is the intellectual property of Mohammad Aslam (“the Author”) and is protected by applicable copyright and intellectual property laws.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+## 🚫 Restrictions
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE. 
+The following actions are strictly **prohibited** without prior **written permission** from the Author:
+
+1. **Use or Deployment:**
+   - You may not use this software in any form (compiled or source code) for personal, educational, commercial, or research purposes.
+
+2. **Copying or Redistribution:**
+   - You may not copy, modify, distribute, sublicense, resell, or share any part of this project or its components, whether privately or publicly.
+
+3. **Commercial Exploitation:**
+   - You may not incorporate this software into any product or service, free or commercial, without express written consent from the Author.
+
+4. **Reverse Engineering:**
+   - You may not decompile, disassemble, or reverse engineer the Software for any purpose.
+
+5. **Forking or Derivative Works:**
+   - You may not create derivative works, adaptations, or forks of this software or any of its parts.
+
+## ✅ Permitted Use
+
+- You may **read and explore** the source code solely for **non-commercial, educational purposes** and only **on your local machine**.
+- You may not use any part of this project in any public-facing or production environment.
+
+## 📬 Contact & Licensing
+
+To inquire about licensing, commercial use, collaborations, or integration, please contact:
+
+**Mohammad Aslam**  
+Email: [aslammohammad336@gmail.com](mailto:aslammohammad336@gmail.com)
+
+## ⚠️ Disclaimer
+
+This software is provided “as is”, without warranty of any kind, express or implied. The Author shall not be held liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from the use of this software.
+
+Unauthorized use of this codebase or derived works may result in legal action.
+
